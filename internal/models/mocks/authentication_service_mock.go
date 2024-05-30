@@ -36,7 +36,7 @@ func (_m *AuthenticationService) Login(ctx context.Context, login string, passwo
 	ret := _m.Called(ctx, login, password)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Login")
+		panic("no return value specified for LoginHandler")
 	}
 
 	var r0 error
@@ -54,7 +54,7 @@ func (_m *AuthenticationService) Register(ctx context.Context, login string, pas
 	ret := _m.Called(ctx, login, password)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Register")
+		panic("no return value specified for RegisterHandler")
 	}
 
 	var r0 error

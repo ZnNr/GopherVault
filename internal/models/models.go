@@ -16,22 +16,22 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+type Note struct {
+	UserName string  `json:"user_name"`
+	Title    *string `json:"title,omitempty"`
+	Content  *string `json:"content,omitempty"`
+	Metadata *string `json:"metadata,omitempty"`
+}
+
 type Credentials struct {
-	UserBase
+	UserName string  `json:"user_name"`
 	Login    *string `json:"login,omitempty"`    // Логин пользователя
 	Password *string `json:"password,omitempty"` // Пароль пользователя
 	Metadata *string `json:"metadata,omitempty"` // Дополнительная метаинформация
 }
 
-type Note struct {
-	UserBase
-	Title    *string `json:"title,omitempty"`    // Заголовок заметки
-	Content  *string `json:"content,omitempty"`  // Содержание заметки
-	Metadata *string `json:"metadata,omitempty"` // Дополнительная метаинформация
-}
-
 type Card struct {
-	UserBase
+	UserName string  `json:"user_name"`
 	BankName *string `json:"bank_name,omitempty"` // Наименование банка
 	Number   *string `json:"number,omitempty"`    // Номер карты
 	CV       *string `json:"cv,omitempty"`        // Код CV (Security code)

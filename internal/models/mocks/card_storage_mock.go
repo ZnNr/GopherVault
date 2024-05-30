@@ -37,7 +37,7 @@ func (_m *CardStorage) GetCard(ctx context.Context, cardRequest models.Card) ([]
 	ret := _m.Called(ctx, cardRequest)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetCard")
+		panic("no return value specified for GetCardHandler")
 	}
 
 	var r0 []models.Card
@@ -67,7 +67,7 @@ func (_m *CardStorage) SaveCard(ctx context.Context, card models.Card) error {
 	ret := _m.Called(ctx, card)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SaveCard")
+		panic("no return value specified for SaveCardHandler")
 	}
 
 	var r0 error
