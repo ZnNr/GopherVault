@@ -13,46 +13,60 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// updateCredentialsCmd represents the updateCredentials command
+// updateCredentialsCmd представляет команду updateCredentials
 var updateCredentialsCmd = &cobra.Command{
 	Use:     "update-credentials",
-	Short:   "Update user credentials for provided login.",
+	Short:   "Update user credentials for the provided login.",
 	Example: "GopherVault update-credentials --user <user-name> --login <saved-login> --password <new-password>",
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := godotenv.Load(".env"); err != nil {
-			log.Fatalf("error while getting envs: %s", err)
-		}
-		var cfg models.Params
-		if err := envconfig.Process("", &cfg); err != nil {
-			log.Fatalf("error while loading envs: %s\n", err)
-		}
+	Run:     updateCredentialsHandler,
+}
 
-		userName, _ := cmd.Flags().GetString("user")
-		login, _ := cmd.Flags().GetString("login")
-		password, _ := cmd.Flags().GetString("password")
-		metadata, _ := cmd.Flags().GetString("metadata")
-		requestCredentials := models.Credentials{
-			UserName: userName,
-			Login:    &login,
-			Password: &password,
-			Metadata: &metadata,
-		}
-		body, err := json.Marshal(requestCredentials)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-		resp, err := resty.New().R().
-			SetHeader("Content-type", "application/json").
-			SetBody(body).
-			Post(fmt.Sprintf("http://%s:%s/update/credentials", cfg.ApplicationHost, cfg.ApplicationPort))
-		if err != nil {
-			log.Printf(err.Error())
-		}
-		if resp.StatusCode() != http.StatusOK {
-			log.Printf("status code is not OK: %s\n", resp.Status())
-		}
-		log.Println(resp.String())
-	},
+// updateCredentialsHandler обработчик команды обновления учетных данных
+func updateCredentialsHandler(cmd *cobra.Command, args []string) {
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatalf("Ошибка при загрузке переменных окружения: %s", err)
+	}
+
+	var cfg models.Params
+	if err := envconfig.Process("", &cfg); err != nil {
+		log.Fatalf("Ошибка при загрузке конфигурации: %s\n", err)
+	}
+
+	userName, _ := cmd.Flags().GetString("user")
+	login, _ := cmd.Flags().GetString("login")
+	password, _ := cmd.Flags().GetString("password")
+	metadata, _ := cmd.Flags().GetString("metadata")
+
+	requestCredentials := models.Credentials{
+		UserName: userName,
+		Login:    &login,
+		Password: &password,
+		Metadata: &metadata,
+	}
+
+	body, err := json.Marshal(requestCredentials)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	resp, err := sendUpdateCredentialsRequest(cfg, body)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		log.Printf("Статус ответа не 'OK': %s\n", resp.Status())
+	}
+
+	log.Println(resp.String())
+}
+
+// sendUpdateCredentialsRequest отправляет запрос на обновление учетных данных
+func sendUpdateCredentialsRequest(cfg models.Params, body []byte) (*resty.Response, error) {
+	return resty.New().R().
+		SetHeader("Content-type", "application/json").
+		SetBody(body).
+		Post(fmt.Sprintf("http://%s:%s/update/credentials", cfg.ApplicationHost, cfg.ApplicationPort))
 }
 
 func init() {

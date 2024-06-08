@@ -18,65 +18,64 @@ import (
 	"time"
 )
 
-// runCmd represents the run command
+// runCmd представляет команду run
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "A command for running application server.",
-	Run: func(cmd *cobra.Command, args []string) {
-		//init logger
-		logger, _ := zap.NewProduction()
-		defer logger.Sync() // flushes buffer, if any
+	Run:   runHandler,
+}
 
-		// run application
-		if err := run(logger.Sugar()); err != nil {
-			log.Fatalf(err.Error())
-		}
-	},
+// runHandler обработчик команды запуска сервера
+func runHandler(cmd *cobra.Command, args []string) {
+	// Инициализация логгера
+	logger, _ := zap.NewProduction()
+	defer logger.Sync() // Сброс буфера, если есть
+
+	// Запуск приложения
+	if err := run(logger.Sugar()); err != nil {
+		log.Fatalf(err.Error())
+	}
 }
 
 func init() {
 	rootCmd.AddCommand(runCmd)
 }
 
-var credentialsStorage models.CredentialsStorage
-var noteStorage models.NoteStorage
-var cardStorage models.CardStorage
-var authService models.AuthenticationService
-
+// run инициализирует и запускает сервер приложения
 func run(sugar *zap.SugaredLogger) error {
 	var cfg models.Params
 	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("error while loading envs: %s\n", err)
+		log.Fatalf("Ошибка при загрузке переменных окружения: %s\n", err)
 	}
 	pg, err := database.New(cfg)
 	if err != nil {
-		return fmt.Errorf("error while trying to setup DB: %w", err)
+		return fmt.Errorf("Ошибка при попытке настройки БД: %w", err)
 	}
 	defer pg.Close()
 
-	// init server
+	// Инициализация сервера
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.ApplicationPort))
 	if err != nil {
-		return fmt.Errorf("error while trying to listen: %w", err)
+		return fmt.Errorf("Ошибка при попытке прослушивания: %w", err)
 	}
-	router := router.New(credentialsStorage, noteStorage, cardStorage, authService, sugar)
+	router := router.New(pg, sugar)
 	server := &http.Server{
 		Handler: router,
 	}
 	go func() {
 		server.Serve(listener)
 	}()
-	// graceful shutdown
+	// Грациозное завершение работы
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err = server.Shutdown(ctx); err != nil {
-			sugar.Infof("Could not shut down server correctly: %v\n", err)
+			sugar.Infof("Не удалось корректно остановить сервер: %v\n", err)
 			os.Exit(1)
 		}
 	}()
 
-	// catch signals
+	// Перехват сигналов
 	sugar.Infof("Started server on %s", cfg.ApplicationPort)
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)

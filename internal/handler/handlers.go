@@ -17,22 +17,16 @@ import (
 var jwtKey = []byte("my_secret_key")
 
 type handler struct {
-	credentialsStorage models.CredentialsStorage
-	noteStorage        models.NoteStorage
-	cardStorage        models.CardStorage
-	authService        models.AuthenticationService
-	log                *zap.SugaredLogger
-	cookies            map[string]string
+	db      models.Storage
+	log     *zap.SugaredLogger
+	cookies map[string]string
 }
 
-func New(credentialsStorage models.CredentialsStorage, noteStorage models.NoteStorage, cardStorage models.CardStorage, authService models.AuthenticationService, log *zap.SugaredLogger) *handler {
+func New(db models.Storage, log *zap.SugaredLogger) *handler {
 	return &handler{
-		credentialsStorage: credentialsStorage,
-		noteStorage:        noteStorage,
-		cardStorage:        cardStorage,
-		authService:        authService,
-		log:                log,
-		cookies:            make(map[string]string),
+		db:      db,
+		log:     log,
+		cookies: make(map[string]string),
 	}
 }
 
@@ -52,7 +46,7 @@ func (h *handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Проверяем пароль пользователя
-	if err = h.authService.Login(ctx, user.Login, user.Password); err != nil {
+	if err = h.db.Login(ctx, user.Login, user.Password); err != nil {
 		message, status := handleUserError(user.Login, err)
 		http.Error(w, message, status)
 		return
@@ -96,7 +90,7 @@ func (h *handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Регистрируем пользователя в системе
-	if err = h.authService.Register(ctx, user.Login, user.Password); err != nil {
+	if err = h.db.Register(ctx, user.Login, user.Password); err != nil {
 		message, status := handleUserError(user.Login, err)
 		http.Error(w, message, status)
 		return
@@ -146,7 +140,7 @@ func (h *handler) GetUserCredentialsHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Получаем учетные данные пользователя из хранилища
-	creds, err := h.credentialsStorage.GetCredentials(ctx, userCredentialsRequest)
+	creds, err := h.db.GetCredentials(ctx, userCredentialsRequest)
 	if err != nil {
 		message, status := handleUserError(userCredentialsRequest.UserName, err)
 		http.Error(w, message, status)
@@ -197,7 +191,7 @@ func (h *handler) SaveUserCredentialsHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Сохраняем учетные данные пользователя в хранилище
-	if err := h.credentialsStorage.SaveCredentials(ctx, requestCredentials); err != nil {
+	if err := h.db.SaveCredentials(ctx, requestCredentials); err != nil {
 		message, status := handleUserError(requestCredentials.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -236,7 +230,7 @@ func (h *handler) DeleteUserCredentialsHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// Удаляем учетные данные из хранилища
-	if err := h.credentialsStorage.DeleteCredentials(ctx, userCredentialsRequest); err != nil {
+	if err := h.db.DeleteCredentials(ctx, userCredentialsRequest); err != nil {
 		message, status := handleUserError(userCredentialsRequest.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -290,7 +284,7 @@ func (h *handler) UpdateUserCredentialsHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// Обновляем учетные данные пользователя в хранилище
-	if err := h.credentialsStorage.UpdateCredentials(ctx, requestCredentials); err != nil {
+	if err := h.db.UpdateCredentials(ctx, requestCredentials); err != nil {
 		message, status := handleUserError(requestCredentials.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -338,7 +332,7 @@ func (h *handler) SaveUserNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сохраняем заметку пользователя в хранилище
-	if err := h.noteStorage.SaveNote(ctx, requestNote); err != nil {
+	if err := h.db.SaveNote(ctx, requestNote); err != nil {
 		message, status := handleUserError(requestNote.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -380,7 +374,7 @@ func (h *handler) GetUserNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем заметку пользователя из хранилища goph-keeper
-	creds, err := h.noteStorage.GetNotes(ctx, userNotesRequest)
+	creds, err := h.db.GetNotes(ctx, userNotesRequest)
 	if err != nil {
 		message, status := handleUserError(userNotesRequest.UserName, err)
 		http.Error(w, message, status)
@@ -427,7 +421,7 @@ func (h *handler) DeleteUserNotesHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Удаляем заметки пользователя из хранилища goph-keeper
-	if err := h.noteStorage.DeleteNotes(ctx, userNotesRequest); err != nil {
+	if err = h.db.DeleteNotes(ctx, userNotesRequest); err != nil {
 		message, status := handleUserError(userNotesRequest.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -479,7 +473,7 @@ func (h *handler) UpdateUserNoteHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Обновляем заметку пользователя в хранилище goph-keeper
-	if err := h.noteStorage.UpdateNote(ctx, requestNote); err != nil {
+	if err := h.db.UpdateNote(ctx, requestNote); err != nil {
 		message, status := handleUserError(requestNote.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -522,7 +516,7 @@ func (h *handler) SaveCardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сохраняем карточку пользователя в хранилище goph-keeper
-	if err := h.cardStorage.SaveCard(ctx, requestCard); err != nil {
+	if err := h.db.SaveCard(ctx, requestCard); err != nil {
 		message, status := handleUserError(requestCard.UserName, err)
 		http.Error(w, message, status)
 		return
@@ -564,7 +558,7 @@ func (h *handler) GetCardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем карточки пользователя из хранилища goph-keeper
-	cards, err := h.cardStorage.GetCard(ctx, cardRequest)
+	cards, err := h.db.GetCard(ctx, cardRequest)
 	if err != nil {
 		message, status := handleUserError(cardRequest.UserName, err)
 		http.Error(w, message, status)
@@ -611,7 +605,7 @@ func (h *handler) DeleteCardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Удаляем карточки пользователя из хранилища goph-keeper
-	if err = h.cardStorage.DeleteCards(ctx, cardRequest); err != nil {
+	if err = h.db.DeleteCards(ctx, cardRequest); err != nil {
 		message, status := handleUserError(cardRequest.UserName, err)
 		http.Error(w, message, status)
 		return

@@ -12,7 +12,7 @@ var buildDate = ""
 // dateCmd представляет команду date.
 var dateCmd = &cobra.Command{
 	Use:     "build-date",
-	Short:   "Показать дату сборки",
+	Short:   "show build-date",
 	Example: "GopherVault build-date",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Printf("Дата сборки: %s\n", buildDate)

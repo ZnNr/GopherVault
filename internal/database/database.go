@@ -7,54 +7,46 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
-	_ "errors"
 	"fmt"
 	"github.com/ZnNr/GopherVault/internal/models"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
-	_ "golang.org/x/crypto/bcrypt"
+
 	"strconv"
 )
 
-type Db struct {
+type db struct {
 	conn          *sql.DB
 	encryptionKey string
 	dataCipher    cipher.Block
 }
 
 // New создает новый экземпляр базы данных и возвращает его
-func New(params models.Params) (*Db, error) {
+func New(params models.Params) (*db, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		params.StorageHost, params.StoragePort, params.StorageUser, params.StoragePassword, params.StorageDbName)
-
 	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to open DB connection: %w", err)
 	}
-
-	encryptionKeyBytes := []byte(params.EncryptionKey)
-	dataCipher, err := aes.NewCipher(encryptionKeyBytes)
+	c, err := aes.NewCipher([]byte(params.EncryptionKey))
 	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("error while creating cipher with key: %w", err)
+		return nil, fmt.Errorf("error while creation cipher with key: %w", err)
 	}
-
-	pg := &Db{
+	pg := db{
 		conn:          conn,
 		encryptionKey: params.EncryptionKey,
-		dataCipher:    dataCipher,
+		dataCipher:    c,
 	}
 
 	if err = pg.conn.Ping(); err != nil {
-		pg.conn.Close()
 		return nil, fmt.Errorf("error while trying to ping DB: %w", err)
 	}
-
-	return pg, nil
+	return &pg, nil
 }
 
 // SaveNote сохраняет заметку в базе данных.
-func (d *Db) SaveNote(ctx context.Context, noteRequest models.Note) error {
+func (d *db) SaveNote(ctx context.Context, noteRequest models.Note) error {
 	// Шифруем содержимое заметки с помощью AES
 	encryptedContent, err := d.encryptAES(*noteRequest.Content)
 	if err != nil {
@@ -75,7 +67,7 @@ func (d *Db) SaveNote(ctx context.Context, noteRequest models.Note) error {
 }
 
 // GetNotes получает записи заметок из базы данных в соответствии с переданным запросом о заметках.
-func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.Note, error) {
+func (d *db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.Note, error) {
 	// Подготовка аргументов для запроса
 	queryArgs := []interface{}{noteRequest.UserName}
 	query := "SELECT user_name, title, content, metadata FROM notes WHERE user_name = $1"
@@ -131,7 +123,7 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 }
 
 // DeleteNotes удаляет заметки из базы данных в соответствии с переданным запросом о заметке.
-func (d *Db) DeleteNotes(ctx context.Context, noteRequest models.Note) error {
+func (d *db) DeleteNotes(ctx context.Context, noteRequest models.Note) error {
 	// Подготовка аргументов для запроса
 	args := []interface{}{noteRequest.UserName}
 	deleteNotesQuery := "DELETE FROM notes WHERE user_name = $1"
@@ -150,7 +142,7 @@ func (d *Db) DeleteNotes(ctx context.Context, noteRequest models.Note) error {
 }
 
 // UpdateNote обновляет информацию о заметке в базе данных в соответствии с переданным запросом о заметке.
-func (d *Db) UpdateNote(ctx context.Context, noteRequest models.Note) error {
+func (d *db) UpdateNote(ctx context.Context, noteRequest models.Note) error {
 	// Шифруем контент заметки
 	encryptedContent, err := d.encryptAES(*noteRequest.Content)
 	if err != nil {
@@ -166,7 +158,7 @@ func (d *Db) UpdateNote(ctx context.Context, noteRequest models.Note) error {
 }
 
 // SaveCredentials сохраняет учетные данные в базе данных.
-func (d *Db) SaveCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
+func (d *db) SaveCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
 	// Шифруем пароль с использованием AES
 	encryptedPassword, err := d.encryptAES(*credentialsRequest.Password)
 	if err != nil {
@@ -183,7 +175,7 @@ func (d *Db) SaveCredentials(ctx context.Context, credentialsRequest models.Cred
 }
 
 // GetCredentials получает учетные данные из базы данных.
-func (d *Db) GetCredentials(ctx context.Context, credentialsRequest models.Credentials) ([]models.Credentials, error) {
+func (d *db) GetCredentials(ctx context.Context, credentialsRequest models.Credentials) ([]models.Credentials, error) {
 	args := []interface{}{credentialsRequest.UserName}
 	getCredsQuery := "SELECT user_name, login, password, metadata FROM credentials WHERE user_name = $1"
 	if credentialsRequest.Login != nil {
@@ -228,7 +220,7 @@ func (d *Db) GetCredentials(ctx context.Context, credentialsRequest models.Crede
 }
 
 // DeleteCredentials удаляет учетные данные из базы данных.
-func (d *Db) DeleteCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
+func (d *db) DeleteCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
 	args := []any{credentialsRequest.UserName}
 	deleteCredsQuery := "DELETE FROM credentials WHERE user_name = $1"
 	if credentialsRequest.Login != nil {
@@ -243,7 +235,7 @@ func (d *Db) DeleteCredentials(ctx context.Context, credentialsRequest models.Cr
 }
 
 // UpdateCredentials обновляет учетные данные в базе данных.
-func (d *Db) UpdateCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
+func (d *db) UpdateCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
 	encryptedPassword, err := d.encryptAES(*credentialsRequest.Password)
 	if err != nil {
 		return fmt.Errorf("ошибка при шифровании пароля: %w", err)
@@ -256,7 +248,7 @@ func (d *Db) UpdateCredentials(ctx context.Context, credentialsRequest models.Cr
 }
 
 // SaveCard сохраняет данные карты в базе данных.
-func (d *Db) SaveCard(ctx context.Context, cardRequest models.Card) error {
+func (d *db) SaveCard(ctx context.Context, cardRequest models.Card) error {
 	encryptedPassword, err := d.encryptAES(*cardRequest.Password)
 	if err != nil {
 		return fmt.Errorf("ошибка при шифровании пароля карты: %w", err)
@@ -273,7 +265,7 @@ func (d *Db) SaveCard(ctx context.Context, cardRequest models.Card) error {
 }
 
 // GetCard извлекает карты из базы данных на основе запроса.
-func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Card, error) {
+func (d *db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Card, error) {
 	args := []interface{}{cardRequest.UserName}
 	getCardsQuery := "SELECT user_name, bank_name, number, cv, password, metadata FROM cards WHERE user_name = $1"
 	if cardRequest.BankName != nil {
@@ -325,8 +317,8 @@ func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Car
 	return cards, nil
 }
 
-// DeleteCard удаляет карты из базы данных на основе запроса.
-func (d *Db) DeleteCard(ctx context.Context, cardRequest models.Card) error {
+// DeleteCards удаляет карты из базы данных на основе запроса.
+func (d *db) DeleteCards(ctx context.Context, cardRequest models.Card) error {
 	args := []interface{}{cardRequest.UserName}
 	deleteNotesQuery := "DELETE FROM cards WHERE user_name = $1"
 	if cardRequest.Number != nil {
@@ -344,7 +336,7 @@ func (d *Db) DeleteCard(ctx context.Context, cardRequest models.Card) error {
 }
 
 // Login проверяет учетные данные пользователя в базе данных.
-func (d *Db) Login(ctx context.Context, login string, password string) error {
+func (d *db) Login(ctx context.Context, login string, password string) error {
 	getRegisteredUser := `SELECT login, password FROM registered_users WHERE login = $1`
 
 	var loginFromDB, passwordFromDB string
@@ -361,7 +353,7 @@ func (d *Db) Login(ctx context.Context, login string, password string) error {
 }
 
 // Register добавляет нового пользователя в базу данных.
-func (d *Db) Register(ctx context.Context, login string, password string) error {
+func (d *db) Register(ctx context.Context, login string, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("этот пароль недопустим: %w", err)
@@ -378,12 +370,12 @@ func (d *Db) Register(ctx context.Context, login string, password string) error 
 }
 
 // Close - метод для закрытия соединения с базой данных.
-func (d *Db) Close() error {
+func (d *db) Close() error {
 	return d.conn.Close()
 }
 
 // encryptAES выполняет шифрование переданного текста с использованием AES и возвращает зашифрованный текст в виде base64 закодированной строки.
-func (d *Db) encryptAES(plaintext string) (string, error) {
+func (d *db) encryptAES(plaintext string) (string, error) {
 	// Инициализируем шифр с использованием режима CFB
 	cfb := cipher.NewCFBEncrypter(d.dataCipher, []byte(d.encryptionKey)[:aes.BlockSize])
 
@@ -398,7 +390,7 @@ func (d *Db) encryptAES(plaintext string) (string, error) {
 }
 
 // decryptAES расшифровывает переданный зашифрованный текст, используя AES, и возвращает исходный текст.
-func (d *Db) decryptAES(ct string) (string, error) {
+func (d *db) decryptAES(ct string) (string, error) {
 	// Декодируем base64 строку в байты зашифрованного текста
 	cipherText, err := base64.StdEncoding.DecodeString(ct)
 	if err != nil {

@@ -3,14 +3,14 @@ package router
 import (
 	"github.com/ZnNr/GopherVault/internal/handler"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
 // New создает новый маршрутизатор с настройками и обработчиками
-func New(credentialsStorage models.CredentialsStorage, noteStorage models.NoteStorage, cardStorage models.CardStorage, authService models.AuthenticationService, log *zap.SugaredLogger) *chi.Mux {
+func New(db models.Storage, log *zap.SugaredLogger) *chi.Mux {
 	// Создаем обработчик HTTP запросов
-	httpHandler := handler.New(credentialsStorage, noteStorage, cardStorage, authService, log)
+	httpHandler := handler.New(db, log)
 
 	// Инициализируем новый маршрутизатор Chi
 	r := chi.NewRouter()
