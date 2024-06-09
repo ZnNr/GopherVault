@@ -27,7 +27,7 @@ func TestDb_Register(t *testing.T) {
 		mock.ExpectExec("insert into registered_users values").
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Register(ctx, userLogin, userPassword)
@@ -43,7 +43,7 @@ func TestDb_Register(t *testing.T) {
 		mock.ExpectExec("insert into registered_users values").
 			WillReturnError(ErrDuplicateKey{Key: "registered_users_pkey"})
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Register(ctx, userLogin, userPassword)
@@ -59,7 +59,7 @@ func TestDb_Register(t *testing.T) {
 		mock.ExpectExec("insert into registered_users values").
 			WillReturnError(errors.New("some insert error"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Register(ctx, userLogin, userPassword)
@@ -86,7 +86,7 @@ func TestDb_Login(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnRows(sqlmock.NewRows([]string{"login", "password"}).AddRow(userLogin, hash))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Login(ctx, userLogin, userPassword)
@@ -103,7 +103,7 @@ func TestDb_Login(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnRows(sqlmock.NewRows([]string{"login", "password"}))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Login(ctx, userLogin, userPassword)
@@ -120,7 +120,7 @@ func TestDb_Login(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnRows(sqlmock.NewRows([]string{"login", "password"}).AddRow(userLogin, "some-hash"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Login(ctx, userLogin, userPassword)
@@ -137,7 +137,7 @@ func TestDb_Login(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnError(errors.New("search error"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.Login(ctx, userLogin, userPassword)
@@ -185,7 +185,7 @@ func TestDb_GetCredentials(t *testing.T) {
 				AddRow(userLogin, "warrior", "ygke1+HOKWWSvfUNiQ==", "valar dohaeris").
 				AddRow(userLogin, "avenger", "zR8XxOfadyU=", nil))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -208,7 +208,7 @@ func TestDb_GetCredentials(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "login", "password", "metadata"}))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -229,7 +229,7 @@ func TestDb_GetCredentials(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnError(errors.New("query error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -263,7 +263,7 @@ func TestDb_SaveCredentials(t *testing.T) {
 			WithArgs(credentials.UserName, credentials.Login, "1QQdwPbUL3mQ", credentials.Metadata).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -283,7 +283,7 @@ func TestDb_SaveCredentials(t *testing.T) {
 			WithArgs(credentials.UserName, credentials.Login, "1QQdwPbUL3mQ", nil).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -303,7 +303,7 @@ func TestDb_SaveCredentials(t *testing.T) {
 			WithArgs(credentials.UserName, credentials.Login, "1QQdwPbUL3mQ", nil).
 			WillReturnError(errors.New("exec error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -330,7 +330,7 @@ func TestDb_DeleteCredentials(t *testing.T) {
 			WithArgs(user).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCredentials(ctx, models.Credentials{
@@ -349,7 +349,7 @@ func TestDb_DeleteCredentials(t *testing.T) {
 			WithArgs(user, &login).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCredentials(ctx, models.Credentials{
@@ -369,7 +369,7 @@ func TestDb_DeleteCredentials(t *testing.T) {
 			WithArgs(user).
 			WillReturnError(errors.New("some error"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCredentials(ctx, models.Credentials{
@@ -388,7 +388,7 @@ func TestDb_DeleteCredentials(t *testing.T) {
 			WithArgs(user, &login).
 			WillReturnError(errors.New("some error"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCredentials(ctx, models.Credentials{
@@ -421,7 +421,7 @@ func TestDb_UpdateCredentials(t *testing.T) {
 			WithArgs("1QQdwPbUL3mQ", credentials.Metadata, credentials.UserName, credentials.Login).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -441,7 +441,7 @@ func TestDb_UpdateCredentials(t *testing.T) {
 			WithArgs("1QQdwPbUL3mQ", nil, credentials.UserName, credentials.Login).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -461,7 +461,7 @@ func TestDb_UpdateCredentials(t *testing.T) {
 			WithArgs("1QQdwPbUL3mQ", nil, credentials.UserName, credentials.Login).
 			WillReturnError(errors.New("exec error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -494,7 +494,7 @@ func TestDb_SaveNote(t *testing.T) {
 			WithArgs(note.UserName, *note.Title, "zwcf07PNKWOQ6PoLlO+3uU4=", note.Metadata).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -514,7 +514,7 @@ func TestDb_SaveNote(t *testing.T) {
 			WithArgs(note.UserName, *note.Title, "zwcf07PNKWOQ6PoLlO+3uU4=", nil).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -534,7 +534,7 @@ func TestDb_SaveNote(t *testing.T) {
 			WithArgs(note.UserName, note.Title, "zwcf07PNKWOQ6PoLlO+3uU4=", nil).
 			WillReturnError(errors.New("exec error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -585,7 +585,7 @@ func TestDb_GetNote(t *testing.T) {
 				AddRow(userLogin, "notes from king's landing", "zwcf07PNKWPVpPYSn/er95LFBKDJ", "my worst days").
 				AddRow(userLogin, "my dear diary", "zA0AxfzNJ3vVpvYQn+g=", nil))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -617,7 +617,7 @@ func TestDb_GetNote(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "title", "content", "metadata"}).
 				AddRow(userLogin, "notes from dorne", "zwcf07PPKWGQpOBElPSmsjQ=", "love"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -640,7 +640,7 @@ func TestDb_GetNote(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "title", "content", "metadata"}))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -661,7 +661,7 @@ func TestDb_GetNote(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnError(errors.New("query error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -689,7 +689,7 @@ func TestDb_DeleteNotes(t *testing.T) {
 			WithArgs(user).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteNotes(ctx, models.Note{
@@ -708,7 +708,7 @@ func TestDb_DeleteNotes(t *testing.T) {
 			WithArgs(user, title).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteNotes(ctx, models.Note{
@@ -728,7 +728,7 @@ func TestDb_DeleteNotes(t *testing.T) {
 			WithArgs(user).
 			WillReturnError(errors.New("some error"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteNotes(ctx, models.Note{
@@ -760,7 +760,7 @@ func TestDb_UpdateNote(t *testing.T) {
 			WithArgs("zwcf07PAKnKDretEjvO7uXwo", note.Metadata, note.UserName, *note.Title).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -780,7 +780,7 @@ func TestDb_UpdateNote(t *testing.T) {
 			WithArgs("zwcf07PAKnKDretEjvO7uXwo", nil, note.UserName, note.Title).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -800,7 +800,7 @@ func TestDb_UpdateNote(t *testing.T) {
 			WithArgs("zwcf07PAKnKDretEjvO7uXwo", nil, note.UserName, note.Title).
 			WillReturnError(errors.New("exec error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -835,7 +835,7 @@ func TestDb_SaveCard(t *testing.T) {
 			WithArgs(card.UserName, *card.BankName, *card.Number, "jVpB", "0A0V1/Da", *card.Metadata).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -855,7 +855,7 @@ func TestDb_SaveCard(t *testing.T) {
 			WithArgs(card.UserName, *card.BankName, *card.Number, "jVpB", "0A0V1/Da", nil).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -875,7 +875,7 @@ func TestDb_SaveCard(t *testing.T) {
 			WithArgs(card.UserName, *card.BankName, *card.Number, "jVpB", "0A0V1/Da", nil).
 			WillReturnError(errors.New("exec error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -932,7 +932,7 @@ func TestDb_GetCard(t *testing.T) {
 				AddRow(userLogin, "tinkoff", "5555444433337777", "hV1G", "zgkfxfba", "black bank").
 				AddRow(userLogin, "sber", "6666555544440000", "iFFA", "zR8XxOfa", nil))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -966,7 +966,7 @@ func TestDb_GetCard(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
 				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -1001,7 +1001,7 @@ func TestDb_GetCard(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
 				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -1036,7 +1036,7 @@ func TestDb_GetCard(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
 				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -1060,7 +1060,7 @@ func TestDb_GetCard(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -1081,7 +1081,7 @@ func TestDb_GetCard(t *testing.T) {
 			WithArgs(userLogin).
 			WillReturnError(errors.New("query error"))
 
-		pg := db{
+		pg := Db{
 			conn:          mockDB,
 			encryptionKey: key,
 			dataCipher:    c,
@@ -1110,7 +1110,7 @@ func TestDb_DeleteCards(t *testing.T) {
 			WithArgs(user).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCards(ctx, models.Card{
@@ -1129,7 +1129,7 @@ func TestDb_DeleteCards(t *testing.T) {
 			WithArgs(user, &bank).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCards(ctx, models.Card{
@@ -1149,7 +1149,7 @@ func TestDb_DeleteCards(t *testing.T) {
 			WithArgs(user, &number).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCards(ctx, models.Card{
@@ -1169,7 +1169,7 @@ func TestDb_DeleteCards(t *testing.T) {
 			WithArgs(user).
 			WillReturnError(errors.New("some error"))
 
-		pg := db{
+		pg := Db{
 			conn: mockDB,
 		}
 		err = pg.DeleteCards(ctx, models.Card{
