@@ -3,14 +3,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
+	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-
-	"github.com/spf13/cobra"
 )
 
 // addNotesCmd represents the add-notes command
@@ -23,56 +20,36 @@ Only authorized users can use this command. The note content is stored in the da
 	Run:     addNoteHandler,
 }
 
-// addNoteHandler обработчик команды добавления заметки
 func addNoteHandler(cmd *cobra.Command, args []string) {
-	// Загружаем переменные среды из файла .env
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Error while getting envs: %s", err)
-	}
+	cfg := cmdutil.LoadEnvVariables()
 
-	var cfg models.Params
-	// Загружаем переменные среды в структуру cfg
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("Error while loading envs: %s\n", err)
-	}
+	userName, title, content, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
-	// Получаем значения флагов команды
-	userName, _ := cmd.Flags().GetString("user")
-	title, _ := cmd.Flags().GetString("title")
-	content, _ := cmd.Flags().GetString("content")
-	metadata, _ := cmd.Flags().GetString("metadata")
+	requestNote := createNoteRequest(userName, title, content, metadata)
 
-	// Создаем объект модели Note
-	requestNote := models.Note{
-		UserName: userName,
-		Title:    &title,
-		Content:  &content,
-	}
-	// Добавляем метаданные, если они указаны
-	if metadata != "" {
-		requestNote.Metadata = &metadata
-	}
-
-	// Преобразуем объект Note в JSON
 	body, err := json.Marshal(requestNote)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	// Отправляем POST-запрос на сохранение заметки
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/save/note", cfg.ApplicationHost, cfg.ApplicationPort))
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/save/note", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
 
-	// Проверяем статус ответа
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("status code is not OK: %s\n", resp.Status())
+	cmdutil.HandleResponse(resp, http.StatusOK)
+}
+
+func createNoteRequest(userName, title, content, metadata string) models.Note {
+	requestNote := models.Note{
+		UserName: userName,
+		Title:    &title,
+		Content:  &content,
 	}
-	fmt.Println(resp.String())
+	if metadata != "" {
+		requestNote.Metadata = &metadata
+	}
+	return requestNote
 }
 
 func init() {

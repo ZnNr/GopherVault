@@ -3,10 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -22,56 +20,37 @@ long-term storage. Only authorized users can use this command. The password is s
 	Run:     addCredentialsHandler,
 }
 
-// addCredentialsHandler обработчик команды добавления add-credentials
 func addCredentialsHandler(cmd *cobra.Command, args []string) {
-	// Загружаем переменные среды из файла .env
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("error while getting envs: %s", err)
-	}
+	cfg := cmdutil.LoadEnvVariables()
 
-	var cfg models.Params
-	// Загружаем переменные среды в структуру cfg
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("error while loading envs: %s\n", err)
-	}
+	// Получение значений флагов из командной строки
+	userName, login, password, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
-	// Получаем значения флагов команды
-	userName, _ := cmd.Flags().GetString("user")
-	login, _ := cmd.Flags().GetString("login")
-	password, _ := cmd.Flags().GetString("password")
-	metadata, _ := cmd.Flags().GetString("metadata")
+	requestCredentials := createCredentialsRequest(userName, login, password, metadata)
 
-	// Создаем объект модели Credentials
-	requestCredentials := models.Credentials{
-		UserName: userName,
-		Login:    &login,
-		Password: &password,
-	}
-	// Добавляем метаданные, если они указаны
-	if metadata != "" {
-		requestCredentials.Metadata = &metadata
-	}
-
-	// Преобразуем объект Credentials в JSON
 	body, err := json.Marshal(requestCredentials)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	// Выполняем POST-запрос для сохранения учетных данных
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/save/credentials", cfg.ApplicationHost, cfg.ApplicationPort))
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/save/credentials", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
 
-	// Проверяем статус ответа
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("status code is not OK: %s\n", resp.Status())
+	cmdutil.HandleResponse(resp, http.StatusOK)
+}
+
+func createCredentialsRequest(userName, login, password, metadata string) models.Credentials {
+	requestCredentials := models.Credentials{
+		UserName: userName,
+		Login:    &login,
+		Password: &password,
 	}
-	fmt.Println(resp.String())
+	if metadata != "" {
+		requestCredentials.Metadata = &metadata
+	}
+	return requestCredentials
 }
 
 func init() {

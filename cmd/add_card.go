@@ -1,20 +1,18 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
 	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/spf13/cobra"
 	"log"
 	"net/http"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
-// addCardCmd представляет команду add-card
+// Определение команды add-card
 var addCardCmd = &cobra.Command{
 	Use:   "add-card",
 	Short: "Add bank card info to GopherVault.",
@@ -24,30 +22,47 @@ long-term storage. Only authorized users can use this command. Password and cv a
 	Run:     addCardHandler,
 }
 
-// addCardHandler обрабатывает команду add-card
+// Обработчик команды add-card
 func addCardHandler(cmd *cobra.Command, args []string) {
-	// Загружаем переменные среды из файла .env
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("ошибка при загрузке переменных окружения из файла: %s", err)
-	}
+	cmdutil.LoadEnvVariables()
 
+	// Получение значений флагов из командной строки
+	userName, bank, number, cv, password, metadata, _ := cmdutil.GetFlagsValues(cmd)
+
+	// Проверка наличия всех обязательных значений
+	checkRequiredValues(userName, bank, number, cv, password)
+
+	// Создание структуры запроса для карты
+	requestCard := createCardRequest(userName, bank, number, cv, password, metadata)
+
+	// Преобразование в JSON и отправка запроса на сервер
+	body := cmdutil.ConvertToJSON(requestCard)
+	sendPostRequest(body)
+}
+
+func sendPostRequest(body []byte) {
 	var cfg models.Params
-	// Загружаем переменные среды в структуру cfg
-	err = envconfig.Process("", &cfg)
+	err := envconfig.Process("", &cfg)
 	if err != nil {
 		log.Fatalf("ошибка при обработке переменных окружения: %s\n", err)
 	}
 
-	// Получение значений флагов из командной строки
-	userName, _ := cmd.Flags().GetString("user")
-	bank, _ := cmd.Flags().GetString("bank")
-	number, _ := cmd.Flags().GetString("number")
-	cv, _ := cmd.Flags().GetString("cv")
-	password, _ := cmd.Flags().GetString("password")
-	metadata, _ := cmd.Flags().GetString("metadata")
+	resp, err := resty.New().R().
+		SetHeader("Content-type", "application/json").
+		SetBody(body).
+		Post(fmt.Sprintf("http://%s:%s/save/card", cfg.ApplicationHost, cfg.ApplicationPort))
+	if err != nil {
+		log.Printf("ошибка при выполнении запроса: %s", err.Error())
+	}
 
-	// Проверка наличия всех обязательных значений
+	if resp != nil && resp.StatusCode() != http.StatusOK {
+		log.Printf("код состояния не ОК: %s\n", resp.Status())
+	}
+
+	fmt.Println(resp.String())
+}
+
+func checkRequiredValues(userName, bank, number, cv, password string) {
 	if strings.TrimSpace(userName) == "" || strings.TrimSpace(bank) == "" || strings.TrimSpace(number) == "" || strings.TrimSpace(cv) == "" || strings.TrimSpace(password) == "" {
 		log.Fatalln("имя пользователя, название банка, номер карты, CV и пароль не должны быть пустыми")
 	}
@@ -57,8 +72,9 @@ func addCardHandler(cmd *cobra.Command, args []string) {
 	if len(cv) != 3 {
 		log.Fatalln("CV-код пластиковой карты должен состоять из 3 цифр.")
 	}
+}
 
-	// Создание структуры запроса для карты
+func createCardRequest(userName, bank, number, cv, password, metadata string) models.Card {
 	requestCard := models.Card{
 		UserName: userName,
 		BankName: &bank,
@@ -69,27 +85,7 @@ func addCardHandler(cmd *cobra.Command, args []string) {
 	if metadata != "" {
 		requestCard.Metadata = &metadata
 	}
-
-	// Преобразование в JSON и отправка запроса на сервер
-	body, err := json.Marshal(requestCard)
-	if err != nil {
-		log.Fatalf("ошибка при маршалинге запроса: %s", err.Error())
-	}
-
-	// Отправка POST запроса на сервер
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/save/card", cfg.ApplicationHost, cfg.ApplicationPort))
-	if err != nil {
-		log.Printf("ошибка при выполнении запроса: %s", err.Error())
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("код состояния не ОК: %s\n", resp.Status())
-	}
-
-	fmt.Println(resp.String())
+	return requestCard
 }
 
 func init() {
