@@ -1,7 +1,6 @@
 package cmdutil
 
 import (
-	"fmt"
 	"github.com/go-resty/resty/v2"
 	"log"
 )
@@ -18,5 +17,5 @@ func HandleResponse(resp *resty.Response, expectedCode int) {
 	if resp.StatusCode() != expectedCode {
 		log.Printf("некорректный статус код: %s\n", resp.Status())
 	}
-	fmt.Println(resp.String())
+	log.Println(resp.String())
 }

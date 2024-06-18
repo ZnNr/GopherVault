@@ -79,8 +79,8 @@ func (h *handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Устанавливаем заголовок Content-Type
 	w.Header().Set("Content-Type", "application/json")
 
-	// Создаем контекст для запроса
-	ctx := context.Background()
+	// Используем контекст из запроса
+	ctx := r.Context()
 
 	// Извлекаем данные пользователя из тела запроса
 	user, err := parseUserInput(r.Body)

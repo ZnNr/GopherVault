@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -21,19 +18,9 @@ var deleteCredentialsCmd = &cobra.Command{
 }
 
 func deleteCredentialsHandler(cmd *cobra.Command, args []string) {
-	// Загружаем переменные среды из файла .env
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Error while getting envs: %s", err)
-	}
 
-	var cfg models.Params
-	// Загружаем переменные среды в структуру cfg
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("Error while loading envs: %s\n", err)
-	}
-
-	userName, _ := cmd.Flags().GetString("user")
-	login, _ := cmd.Flags().GetString("login")
+	cfg := cmdutil.LoadEnvVariables()
+	userName, login, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	// Создаем объект модели Credentials для запроса
 	requestUserCredentials := models.Credentials{
@@ -44,26 +31,15 @@ func deleteCredentialsHandler(cmd *cobra.Command, args []string) {
 		requestUserCredentials.Login = &login
 	}
 
-	// Преобразуем объект в json
-	body, err := json.Marshal(requestUserCredentials)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	log.Println(string(body))
+	body := cmdutil.ConvertToJSONRequestCredential(requestUserCredentials)
 
 	// Отправляем POST-запрос на удаление учетных данных
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/delete/credentials", cfg.ApplicationHost, cfg.ApplicationPort))
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/delete/credentials", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Status code is not OK: %s\n", resp.Status())
-	}
-	log.Printf(resp.String())
 
+	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
 func init() {

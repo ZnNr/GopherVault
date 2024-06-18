@@ -36,7 +36,7 @@ func addCardHandler(cmd *cobra.Command, args []string) {
 	requestCard := createCardRequest(userName, bank, number, cv, password, metadata)
 
 	// Преобразование в JSON и отправка запроса на сервер
-	body := cmdutil.ConvertToJSON(requestCard)
+	body := cmdutil.ConvertToJSONRequestCards(requestCard)
 	sendPostRequest(body)
 }
 
@@ -59,7 +59,7 @@ func sendPostRequest(body []byte) {
 		log.Printf("код состояния не ОК: %s\n", resp.Status())
 	}
 
-	fmt.Println(resp.String())
+	log.Println(resp.String())
 }
 
 func checkRequiredValues(userName, bank, number, cv, password string) {

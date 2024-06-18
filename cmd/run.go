@@ -45,7 +45,7 @@ func init() {
 func run(sugar *zap.SugaredLogger) error {
 	var cfg models.Params
 	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("Ошибка при загрузке переменных окружения: %s\n", err)
+		return fmt.Errorf("Ошибка при загрузке переменных окружения: %w", err)
 	}
 	pg, err := database.New(cfg)
 	if err != nil {
@@ -63,21 +63,27 @@ func run(sugar *zap.SugaredLogger) error {
 		Handler: router,
 	}
 	go func() {
-		server.Serve(listener)
+		if err := server.Serve(listener); err != nil {
+			sugar.Errorf("Ошибка при запуске сервера: %v", err)
+		}
 	}()
 	// Грациозное завершение работы
-	defer func() {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-ch
+		sugar.Infof(" Получен сигнал завершения работы сервера.")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err = server.Shutdown(ctx); err != nil {
-			sugar.Infof("Не удалось корректно остановить сервер: %v\n", err)
-			os.Exit(1)
+		if err := server.Shutdown(ctx); err != nil {
+			sugar.Infof("Не удалось корректно остановить сервер: %v", err)
 		}
 	}()
 
 	// Перехват сигналов
 	sugar.Infof("Started server on %s", cfg.ApplicationPort)
-	ch := make(chan os.Signal, 1)
+	ch = make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	sugar.Infof(fmt.Sprint(<-ch))
 	sugar.Infof("Stopping API server.")

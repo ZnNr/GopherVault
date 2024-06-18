@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -23,42 +20,23 @@ Only authorized users can use this command`,
 }
 
 func getCredentialsHandler(cmd *cobra.Command, args []string) {
-	// Загрузка переменных окружения
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Ошибка при загрузке переменных окружения: %s", err)
-	}
+	cfg := cmdutil.LoadEnvVariables()
+	userName, userLogin, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
-	var cfg models.Params
-	// Загрузка настроек из переменных окружения
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("Ошибка при загрузке переменных окружения: %s\n", err)
-	}
-
-	userName, _ := cmd.Flags().GetString("user")
-	userLogin, _ := cmd.Flags().GetString("login")
 	requestUserCredentials := models.Credentials{
 		UserName: userName,
 	}
 	if userLogin != "" {
 		requestUserCredentials.Login = &userLogin
 	}
-	body, err := json.Marshal(requestUserCredentials)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+	body := cmdutil.ConvertToJSONRequestCredential(requestUserCredentials)
 
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/get/credentials", cfg.ApplicationHost, cfg.ApplicationPort))
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/get/credentials", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Статус ответа не ОК: %s\n", resp.Status())
-	}
-	log.Printf(resp.String())
 
+	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
 func init() {

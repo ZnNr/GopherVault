@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
@@ -27,10 +26,7 @@ func addNoteHandler(cmd *cobra.Command, args []string) {
 
 	requestNote := createNoteRequest(userName, title, content, metadata)
 
-	body, err := json.Marshal(requestNote)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	body := cmdutil.ConvertToJSONRequestNotes(requestNote)
 
 	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/save/note", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {

@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"log"
 	"net/http"
 
@@ -23,19 +20,8 @@ var updateCredentialsCmd = &cobra.Command{
 
 // updateCredentialsHandler обработчик команды обновления учетных данных
 func updateCredentialsHandler(cmd *cobra.Command, args []string) {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Ошибка при загрузке переменных окружения: %s", err)
-	}
-
-	var cfg models.Params
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("Ошибка при загрузке конфигурации: %s\n", err)
-	}
-
-	userName, _ := cmd.Flags().GetString("user")
-	login, _ := cmd.Flags().GetString("login")
-	password, _ := cmd.Flags().GetString("password")
-	metadata, _ := cmd.Flags().GetString("metadata")
+	cfg := cmdutil.LoadEnvVariables()
+	userName, login, password, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestCredentials := models.Credentials{
 		UserName: userName,
@@ -44,29 +30,14 @@ func updateCredentialsHandler(cmd *cobra.Command, args []string) {
 		Metadata: &metadata,
 	}
 
-	body, err := json.Marshal(requestCredentials)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	body := cmdutil.ConvertToJSONRequestCredential(requestCredentials)
 
-	resp, err := sendUpdateCredentialsRequest(cfg, body)
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/update/credentials", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Статус ответа не 'OK': %s\n", resp.Status())
-	}
-
-	log.Println(resp.String())
-}
-
-// sendUpdateCredentialsRequest отправляет запрос на обновление учетных данных
-func sendUpdateCredentialsRequest(cfg models.Params, body []byte) (*resty.Response, error) {
-	return resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/update/credentials", cfg.ApplicationHost, cfg.ApplicationPort))
+	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
 func init() {

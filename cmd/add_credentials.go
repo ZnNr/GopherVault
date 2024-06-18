@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
@@ -26,22 +25,6 @@ func addCredentialsHandler(cmd *cobra.Command, args []string) {
 	// Получение значений флагов из командной строки
 	userName, login, password, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
-	requestCredentials := createCredentialsRequest(userName, login, password, metadata)
-
-	body, err := json.Marshal(requestCredentials)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/save/credentials", cfg.ApplicationHost, cfg.ApplicationPort), body)
-	if err != nil {
-		log.Printf(err.Error())
-	}
-
-	cmdutil.HandleResponse(resp, http.StatusOK)
-}
-
-func createCredentialsRequest(userName, login, password, metadata string) models.Credentials {
 	requestCredentials := models.Credentials{
 		UserName: userName,
 		Login:    &login,
@@ -50,7 +33,15 @@ func createCredentialsRequest(userName, login, password, metadata string) models
 	if metadata != "" {
 		requestCredentials.Metadata = &metadata
 	}
-	return requestCredentials
+
+	body := cmdutil.ConvertToJSONRequestCredential(requestCredentials)
+
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/save/credentials", cfg.ApplicationHost, cfg.ApplicationPort), body)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+
+	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
 func init() {

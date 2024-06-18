@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -22,22 +19,8 @@ var updateNotesCmd = &cobra.Command{
 
 // updateNoteHandler обработчик команды обновления заметки
 func updateNoteHandler(cmd *cobra.Command, args []string) {
-	// Загружаем переменные окружения из файла .env
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Ошибка при загрузке переменных окружения: %s", err)
-	}
-
-	// Получаем конфигурацию
-	var cfg models.Params
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("Ошибка при загрузке конфигурации: %s\n", err)
-	}
-
-	// Получаем значения флагов из командной строки
-	userName, _ := cmd.Flags().GetString("user")
-	title, _ := cmd.Flags().GetString("title")
-	content, _ := cmd.Flags().GetString("content")
-	metadata, _ := cmd.Flags().GetString("metadata")
+	cfg := cmdutil.LoadEnvVariables()
+	userName, title, content, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	// Создаем объект заметки
 	requestNote := models.Note{
@@ -47,32 +30,15 @@ func updateNoteHandler(cmd *cobra.Command, args []string) {
 		Metadata: &metadata,
 	}
 
-	// Преобразуем объект заметки в JSON
-	body, err := json.Marshal(requestNote)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	body := cmdutil.ConvertToJSONRequestNotes(requestNote)
 
 	// Отправляем POST-запрос на сервер
-	resp, err := sendUpdateRequest(cfg, body)
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/update/note", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
 
-	// Проверяем статус ответа
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Статус ответа не 'OK': %s\n", resp.Status())
-	}
-
-	log.Println(resp.String())
-}
-
-// sendUpdateRequest отправляет запрос на обновление заметки
-func sendUpdateRequest(cfg models.Params, body []byte) (*resty.Response, error) {
-	return resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/update/note", cfg.ApplicationHost, cfg.ApplicationPort))
+	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
 func init() {

@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	cmdutil "github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -22,49 +19,24 @@ var registerCmd = &cobra.Command{
 }
 
 func registerHandler(cmd *cobra.Command, args []string) {
-	// Загружаем переменные окружения из файла .env
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("error while getting envs: %s", err)
-	}
+	cfg := cmdutil.LoadEnvVariables()
+	login, password, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
-	// Загружаем конфигурацию из переменных окружения
-	var cfg models.Params
-	if err := envconfig.Process("", &cfg); err != nil {
-		log.Fatalf("error while loading envs: %s\n", err)
-	}
-
-	// Получаем логин и пароль из флагов команды
-	login, _ := cmd.Flags().GetString("login")
-	password, _ := cmd.Flags().GetString("password")
 	userCreds := models.User{
 		Login:    login,
 		Password: password,
 	}
 
-	// Преобразуем структуру пользователя в JSON
-	body, err := json.Marshal(userCreds)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	body := cmdutil.ConvertToJSONRequestUserCredential(userCreds)
 
-	// Отправляем POST запрос для регистрации пользователя
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/auth/register", cfg.ApplicationHost, cfg.ApplicationPort))
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/auth/register", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
 		log.Printf(err.Error())
 	}
 
-	// Проверяем статус код ответа
-	if resp.StatusCode() != http.StatusOK {
-		log.Printf("status code is not OK: %s\n", resp.Status())
-		fmt.Println(resp.String())
-		return
-	}
+	cmdutil.HandleResponse(resp, http.StatusOK)
 
-	// Выводим сообщение об успешной регистрации пользователя
-	fmt.Printf("user %q was successfully registered in goph-keeper", login)
+	log.Printf("Пользователь %q успешно зарегистрировался в систему GopherVault\n", login)
 }
 
 func init() {

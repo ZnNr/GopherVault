@@ -53,11 +53,8 @@ func (d *Db) SaveNote(ctx context.Context, noteRequest models.Note) error {
 	}
 	saveNotesQuery := "insert into notes (user_name, title, content, metadata) values ($1, $2, $3, $4)"
 	if _, err = d.conn.ExecContext(ctx, saveNotesQuery, noteRequest.UserName, noteRequest.Title, encryptedContent, noteRequest.Metadata); err != nil {
-		// Если возникла ошибка при сохранении заметки, возвращаем ошибку с информацией
 		return fmt.Errorf("ошибка при сохранении заметки для пользователя %q: %w", noteRequest.UserName, err)
 	}
-
-	// Возвращаем nil (без ошибок), если заметка успешно сохранена
 	return nil
 }
 

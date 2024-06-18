@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -21,6 +22,19 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		os.Exit(1)
+		log.Fatalf("Ошибка выполнения команды: %v", err)
+	}
+	os.Exit(1)
+
+}
+
+// Логируем завершение программы
+func init() {
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		log.Printf("Запуск приложения %s %s", cmd.Use, cmd.Version)
+	}
+
+	rootCmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		log.Printf("Завершение приложения %s %s", cmd.Use, cmd.Version)
 	}
 }
