@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/ZnNr/GopherVault/cmdutils"
 	"github.com/ZnNr/GopherVault/internal/models"
-	"github.com/go-resty/resty/v2"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -24,7 +22,7 @@ long-term storage. Only authorized users can use this command. Password and cv a
 
 // Обработчик команды add-card
 func addCardHandler(cmd *cobra.Command, args []string) {
-	cmdutil.LoadEnvVariables()
+	cfg := cmdutil.LoadEnvVariables()
 
 	// Получение значений флагов из командной строки
 	userName, bank, number, cv, password, metadata, _ := cmdutil.GetFlagsValues(cmd)
@@ -37,29 +35,12 @@ func addCardHandler(cmd *cobra.Command, args []string) {
 
 	// Преобразование в JSON и отправка запроса на сервер
 	body := cmdutil.ConvertToJSONRequestCards(requestCard)
-	sendPostRequest(body)
-}
-
-func sendPostRequest(body []byte) {
-	var cfg models.Params
-	err := envconfig.Process("", &cfg)
+	resp, err := cmdutil.ExecutePostRequest(fmt.Sprintf("http://%s:%s/save/card", cfg.ApplicationHost, cfg.ApplicationPort), body)
 	if err != nil {
-		log.Fatalf("ошибка при обработке переменных окружения: %s\n", err)
+		log.Printf(err.Error())
 	}
 
-	resp, err := resty.New().R().
-		SetHeader("Content-type", "application/json").
-		SetBody(body).
-		Post(fmt.Sprintf("http://%s:%s/save/card", cfg.ApplicationHost, cfg.ApplicationPort))
-	if err != nil {
-		log.Printf("ошибка при выполнении запроса: %s", err.Error())
-	}
-
-	if resp != nil && resp.StatusCode() != http.StatusOK {
-		log.Printf("код состояния не ОК: %s\n", resp.Status())
-	}
-
-	log.Println(resp.String())
+	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
 func checkRequiredValues(userName, bank, number, cv, password string) {
