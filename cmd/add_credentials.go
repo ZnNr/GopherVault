@@ -25,14 +25,7 @@ func addCredentialsHandler(cmd *cobra.Command, args []string) {
 	// Получение значений флагов из командной строки
 	userName, login, password, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
-	requestCredentials := models.Credentials{
-		UserName: userName,
-		Login:    &login,
-		Password: &password,
-	}
-	if metadata != "" {
-		requestCredentials.Metadata = &metadata
-	}
+	requestCredentials := createCredentialRequest(userName, login, password, metadata)
 
 	body := cmdutil.ConvertToJSONRequestCredential(requestCredentials)
 
@@ -42,6 +35,19 @@ func addCredentialsHandler(cmd *cobra.Command, args []string) {
 	}
 
 	cmdutil.HandleResponse(resp, http.StatusOK)
+
+}
+
+func createCredentialRequest(userName, login, password, metadata string) models.Credentials {
+	requestCredentials := models.Credentials{
+		UserName: userName,
+		Login:    &login,
+		Password: &password,
+	}
+	if metadata != "" {
+		requestCredentials.Metadata = &metadata
+	}
+	return requestCredentials
 }
 
 func init() {

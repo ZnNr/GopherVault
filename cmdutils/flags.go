@@ -9,6 +9,7 @@ func GetFlagsValues(cmd *cobra.Command) (userName, bank, number, cv, login, pass
 	bank, _ = cmd.Flags().GetString("bank")
 	number, _ = cmd.Flags().GetString("number")
 	cv, _ = cmd.Flags().GetString("cv")
+	login, _ = cmd.Flags().GetString("login")
 	password, _ = cmd.Flags().GetString("password")
 	metadata, _ = cmd.Flags().GetString("metadata")
 	return
