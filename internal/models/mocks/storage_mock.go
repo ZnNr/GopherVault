@@ -4,7 +4,6 @@ package mocks
 
 import (
 	context "context"
-
 	models "github.com/ZnNr/GopherVault/internal/models"
 	mock "github.com/stretchr/testify/mock"
 )

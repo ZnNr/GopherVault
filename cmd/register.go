@@ -20,7 +20,7 @@ var registerCmd = &cobra.Command{
 
 func registerHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	login, password, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	login, password, _, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	userCreds := models.User{
 		Login:    login,

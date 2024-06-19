@@ -25,13 +25,13 @@ func addCardHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
 
 	// Получение значений флагов из командной строки
-	userName, bank, number, cv, password, metadata, _ := cmdutil.GetFlagsValues(cmd)
+	userName, bank, number, cv, password, сardType, metadata, _ := cmdutil.GetFlagsValues(cmd)
 
 	// Проверка наличия всех обязательных значений
-	checkRequiredValues(userName, bank, number, cv, password)
+	checkRequiredValues(userName, bank, number, cv, password, сardType)
 
 	// Создание структуры запроса для карты
-	requestCard := createCardRequest(userName, bank, number, cv, password, metadata)
+	requestCard := createCardRequest(userName, bank, number, cv, password, сardType, metadata)
 
 	// Преобразование в JSON и отправка запроса на сервер
 	body := cmdutil.ConvertToJSONRequestCards(requestCard)
@@ -43,9 +43,9 @@ func addCardHandler(cmd *cobra.Command, args []string) {
 	cmdutil.HandleResponse(resp, http.StatusOK)
 }
 
-func checkRequiredValues(userName, bank, number, cv, password string) {
-	if strings.TrimSpace(userName) == "" || strings.TrimSpace(bank) == "" || strings.TrimSpace(number) == "" || strings.TrimSpace(cv) == "" || strings.TrimSpace(password) == "" {
-		log.Fatalln("имя пользователя, название банка, номер карты, CV и пароль не должны быть пустыми")
+func checkRequiredValues(userName, bank, number, cv, password, cardType string) {
+	if strings.TrimSpace(userName) == "" || strings.TrimSpace(bank) == "" || strings.TrimSpace(number) == "" || strings.TrimSpace(cv) == "" || strings.TrimSpace(password) == "" || strings.TrimSpace(cardType) == "" {
+		log.Fatalln("имя пользователя, название банка, номер карты, CV, пароль, тип карты не должны быть пустыми")
 	}
 	if len(number) != 16 {
 		log.Fatalln("идентификационный номер пластиковой карты должен состоять из 16 цифр.")
@@ -55,13 +55,14 @@ func checkRequiredValues(userName, bank, number, cv, password string) {
 	}
 }
 
-func createCardRequest(userName, bank, number, cv, password, metadata string) models.Card {
+func createCardRequest(userName, bank, number, cv, password, cardType, metadata string) models.Card {
 	requestCard := models.Card{
 		UserName: userName,
 		BankName: &bank,
 		Number:   &number,
 		CV:       &cv,
 		Password: &password,
+		CardType: &cardType,
 	}
 	if metadata != "" {
 		requestCard.Metadata = &metadata
@@ -78,10 +79,12 @@ func init() {
 	addCardCmd.Flags().String("number", "", "card number")
 	addCardCmd.Flags().String("cv", "", "card cv")
 	addCardCmd.Flags().String("password", "", "card password")
+	addCardCmd.Flags().String("type", "", "card type")
 	addCardCmd.Flags().String("metadata", "", "metadata")
 	addCardCmd.MarkFlagRequired("user")
 	addCardCmd.MarkFlagRequired("bank")
 	addCardCmd.MarkFlagRequired("number")
 	addCardCmd.MarkFlagRequired("cv")
 	addCardCmd.MarkFlagRequired("password")
+	addCardCmd.MarkFlagRequired("type")
 }

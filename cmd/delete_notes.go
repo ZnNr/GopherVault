@@ -20,7 +20,7 @@ var deleteNotesCmd = &cobra.Command{
 func deleteNotesHandler(cmd *cobra.Command, args []string) {
 	// Загрузка переменных окружения
 	cfg := cmdutil.LoadEnvVariables()
-	userName, title, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, title, _, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestNotes := models.Note{
 		UserName: userName,

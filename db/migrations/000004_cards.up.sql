@@ -1,9 +1,10 @@
-create table if not exists cards (
-                                     user_name text not null,
-                                     bank_name text not null,
-                                     number text,
-                                     cv text,
-                                     password text,
-                                     metadata text,
-                                     primary key (user_name, bank_name, number)
+CREATE TABLE IF NOT EXISTS cards (
+                                     id SERIAL PRIMARY KEY,
+                                     user_name TEXT NOT NULL,
+                                     bank_name TEXT NOT NULL,
+                                     number TEXT,
+                                     cv TEXT,
+                                     password TEXT,
+                                     card_type TEXT,
+                                     metadata TEXT
 );

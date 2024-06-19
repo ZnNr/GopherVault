@@ -36,6 +36,7 @@ type Card struct {
 	Number   *string `json:"number,omitempty"`    // Номер карты
 	CV       *string `json:"cv,omitempty"`        // Код CV (Security code)
 	Password *string `json:"password,omitempty"`  // Пароль карты
+	CardType *string `json:"card_type,omitempty"` // тип карты
 	Metadata *string `json:"metadata,omitempty"`  // Дополнительная метаинформация
 }
 

@@ -20,7 +20,7 @@ var getCardCmd = &cobra.Command{
 
 func getCardHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	userName, bank, number, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, bank, number, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestCard := models.Card{
 		UserName: userName,

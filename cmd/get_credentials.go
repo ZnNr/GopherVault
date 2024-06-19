@@ -21,7 +21,7 @@ Only authorized users can use this command`,
 
 func getCredentialsHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	userName, userLogin, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, userLogin, _, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestUserCredentials := models.Credentials{
 		UserName: userName,

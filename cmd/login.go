@@ -21,7 +21,7 @@ Only registered users can run this command`,
 
 func loginHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	login, password, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	login, password, _, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	userCreds := models.User{
 		Login:    login,

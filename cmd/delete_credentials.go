@@ -20,7 +20,7 @@ var deleteCredentialsCmd = &cobra.Command{
 func deleteCredentialsHandler(cmd *cobra.Command, args []string) {
 
 	cfg := cmdutil.LoadEnvVariables()
-	userName, login, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, login, _, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	// Создаем объект модели Credentials для запроса
 	requestUserCredentials := models.Credentials{

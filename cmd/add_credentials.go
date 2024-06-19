@@ -23,7 +23,7 @@ func addCredentialsHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
 
 	// Получение значений флагов из командной строки
-	userName, login, password, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, login, password, metadata, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestCredentials := createCredentialRequest(userName, login, password, metadata)
 

@@ -22,7 +22,7 @@ Only authorized users can use this command. The note content is stored in the da
 func addNoteHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
 
-	userName, title, content, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, title, content, metadata, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestNote := createNoteRequest(userName, title, content, metadata)
 

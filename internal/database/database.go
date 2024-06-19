@@ -11,6 +11,7 @@ import (
 	"github.com/ZnNr/GopherVault/internal/models"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 
 	"strconv"
 )
@@ -60,6 +61,8 @@ func (d *Db) SaveNote(ctx context.Context, noteRequest models.Note) error {
 
 // GetNotes получает записи заметок из базы данных в соответствии с переданным запросом о заметках.
 func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.Note, error) {
+	log.Printf("Выполняется запрос заметок для пользователя: %q", noteRequest.UserName)
+
 	// Подготовка аргументов для запроса
 	queryArgs := []interface{}{noteRequest.UserName}
 	query := "SELECT user_name, title, content, metadata FROM notes WHERE user_name = $1"
@@ -73,11 +76,17 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 	// Инициируем запрос к базе данных
 	rows, err := d.conn.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при получении заметок для пользователя %q: %w", noteRequest.UserName, err)
+		errMsg := fmt.Errorf("ошибка при получении заметок для пользователя %q: %w", noteRequest.UserName, err)
+		log.Println(errMsg)
+		return nil, errMsg
 	}
 	defer func() {
-		_ = rows.Close()
-		_ = rows.Err()
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии строк: %v", cerr)
+		}
+		if err := rows.Err(); err != nil {
+			log.Printf("ошибка после итерации по результатам запроса: %v", err)
+		}
 	}()
 
 	// Объявляем список для хранения заметок
@@ -86,13 +95,17 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 		var userName, title, content string
 		var metadata sql.NullString
 		if err := rows.Scan(&userName, &title, &content, &metadata); err != nil {
-			return nil, fmt.Errorf("ошибка при сканировании строк после запроса на получение заметок пользователя: %w", err)
+			errMsg := fmt.Errorf("ошибка при сканировании строк после запроса на получение заметок пользователя: %w", err)
+			log.Println(errMsg)
+			return nil, errMsg
 		}
 
 		// Расшифровка контента заметки
 		decryptedContent, err := d.decryptAES(content)
 		if err != nil {
-			return nil, fmt.Errorf("ошибка при расшифровке контента заметки: %w", err)
+			errMsg := fmt.Errorf("ошибка при расшифровке контента заметки: %w", err)
+			log.Println(errMsg)
+			return nil, errMsg
 		}
 
 		// Создание структуры заметки и добавление в список
@@ -108,8 +121,10 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 	}
 
 	if len(notes) == 0 {
+		log.Println("Для пользователя %q не найдено заметок", noteRequest.UserName)
 		return nil, ErrNoData
 	}
+	log.Printf("Запрос заметок для пользователя %q выполнен успешно", noteRequest.UserName)
 
 	return notes, nil
 }
@@ -249,7 +264,7 @@ func (d *Db) SaveCard(ctx context.Context, cardRequest models.Card) error {
 	if err != nil {
 		return fmt.Errorf("ошибка при шифровании CV карты: %w", err)
 	}
-	saveCardQuery := "INSERT INTO cards (user_name, bank_name, number, cv, password, metadata) VALUES ($1, $2, $3, $4, $5, $6)"
+	saveCardQuery := "INSERT INTO cards (user_name, bank_name, number, cv, password, cardType, metadata) VALUES ($1, $2, $3, $4, $5, $6)"
 	if _, err := d.conn.ExecContext(ctx, saveCardQuery, cardRequest.UserName, *cardRequest.BankName, *cardRequest.Number, encryptedCV, encryptedPassword, cardRequest.Metadata); err != nil {
 		return fmt.Errorf("ошибка при сохранении данных карты для пользователя %q: %w", cardRequest.UserName, err)
 	}
@@ -259,7 +274,7 @@ func (d *Db) SaveCard(ctx context.Context, cardRequest models.Card) error {
 // GetCard извлекает карты из базы данных на основе запроса.
 func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Card, error) {
 	args := []interface{}{cardRequest.UserName}
-	getCardsQuery := "SELECT user_name, bank_name, number, cv, password, metadata FROM cards WHERE user_name = $1"
+	getCardsQuery := "SELECT user_name, bank_name, number, cv, password, cardType, metadata FROM cards WHERE user_name = $1"
 	if cardRequest.BankName != nil {
 		args = append(args, *cardRequest.BankName)
 		getCardsQuery += fmt.Sprintf(" AND bank_name = $%d", len(args))
@@ -278,9 +293,9 @@ func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Car
 
 	var cards []models.Card
 	for rows.Next() {
-		var userName, bankName, number, cv, password string
+		var userName, bankName, number, cv, password, cardType string
 		var metadata sql.NullString
-		if err = rows.Scan(&userName, &bankName, &number, &cv, &password, &metadata); err != nil {
+		if err = rows.Scan(&userName, &bankName, &number, &cv, &password, &cardType, &metadata); err != nil {
 			return nil, fmt.Errorf("ошибка при сканировании строк после запроса на получение заметок пользователя: %w", err)
 		}
 		decryptedPassword, err := d.decryptAES(password)
@@ -297,6 +312,7 @@ func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Car
 			Number:   &number,
 			CV:       &decryptedCV,
 			Password: &decryptedPassword,
+			CardType: &cardType,
 		}
 		if metadata.Valid {
 			res.Metadata = &metadata.String

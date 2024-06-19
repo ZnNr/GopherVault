@@ -20,7 +20,7 @@ var updateNotesCmd = &cobra.Command{
 // updateNoteHandler обработчик команды обновления заметки
 func updateNoteHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	userName, title, content, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, title, content, metadata, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	// Создаем объект заметки
 	requestNote := models.Note{

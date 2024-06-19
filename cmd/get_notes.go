@@ -19,7 +19,7 @@ var getNotesCmd = &cobra.Command{
 
 func getNotesHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	userName, title, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, title, _, _, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestNotes := models.Note{
 		UserName: userName,

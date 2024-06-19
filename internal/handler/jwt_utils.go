@@ -16,7 +16,7 @@ import (
 
 // parseUserInput парсирует входные данные пользователя и возвращает структуру *models.User
 func parseUserInput(body io.ReadCloser) (*models.User, error) {
-	var user *models.User
+	var userFromRequest *models.User
 
 	// Чтение данных из тела запроса
 	var buf bytes.Buffer
@@ -25,16 +25,16 @@ func parseUserInput(body io.ReadCloser) (*models.User, error) {
 	}
 
 	// Распаковка данных JSON в структуру *internal.User
-	if err := json.Unmarshal(buf.Bytes(), &user); err != nil {
+	if err := json.Unmarshal(buf.Bytes(), &userFromRequest); err != nil {
 		return nil, fmt.Errorf("ошибка при декодировании JSON-данных: %w", err)
 	}
 
 	// Проверка наличия логина и пароля
-	if user.Login == "" || user.Password == "" {
+	if userFromRequest.Login == "" || userFromRequest.Password == "" {
 		return nil, fmt.Errorf("логин или пароль пустой")
 	}
 
-	return user, nil
+	return userFromRequest, nil
 }
 
 // извлечение JWT токена из строки куки

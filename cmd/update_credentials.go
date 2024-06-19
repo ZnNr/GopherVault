@@ -21,7 +21,7 @@ var updateCredentialsCmd = &cobra.Command{
 // updateCredentialsHandler обработчик команды обновления учетных данных
 func updateCredentialsHandler(cmd *cobra.Command, args []string) {
 	cfg := cmdutil.LoadEnvVariables()
-	userName, login, password, metadata, _, _, _ := cmdutil.GetFlagsValues(cmd)
+	userName, login, password, metadata, _, _, _, _ := cmdutil.GetFlagsValues(cmd)
 
 	requestCredentials := models.Credentials{
 		UserName: userName,
