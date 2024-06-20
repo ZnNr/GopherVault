@@ -320,13 +320,13 @@ func TestHandler_SaveUserCredentials(t *testing.T) {
 		{
 			name:         "positive: success saving credentials",
 			expectedCode: http.StatusOK,
-			expectedBody: `saved credentials for user "shae"`,
+			expectedBody: `Учетные данные для пользователя "shae" сохранены`,
 		},
 		{
 			name:                 "negative: saving error",
 			expectedCode:         http.StatusInternalServerError,
 			storageResponseError: errors.New("save error"),
-			expectedBody:         `user "shae" request error : save error`,
+			expectedBody:         `ошибка запроса пользователя "shae": save error`,
 		},
 	}
 	for _, tt := range testCases {
@@ -439,7 +439,7 @@ func TestHandler_DeleteUserCredentials(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, resp.StatusCode(), http.StatusOK)
-		assert.Equal(t, resp.String(), "credentials for user \"missandei\" with login \"blackgirl\" was successfully deleted")
+		assert.Equal(t, resp.String(), "Учетные данные для пользователя \"missandei\" с логином \"blackgirl\" были успешно удалены")
 	})
 	t.Run("positive: with no login", func(t *testing.T) {
 		mockedStorage := mocks.NewStorage(t)
@@ -474,7 +474,7 @@ func TestHandler_DeleteUserCredentials(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, resp.StatusCode(), http.StatusOK)
-		assert.Equal(t, resp.String(), "credentials for user \"missandei\" was successfully deleted")
+		assert.Equal(t, resp.String(), "Учетные данные для пользователя \"missandei\" были успешно удалены")
 	})
 }
 
@@ -498,13 +498,13 @@ func TestHandler_UpdateUserCredentials(t *testing.T) {
 		{
 			name:         "positive: success updating credentials",
 			expectedCode: http.StatusOK,
-			expectedBody: `updated credentials for user "shae"`,
+			expectedBody: `Учетные данные для пользователя "shae" были успешно обновлены`,
 		},
 		{
 			name:                 "negative: updating error",
 			expectedCode:         http.StatusInternalServerError,
 			storageResponseError: errors.New("update error"),
-			expectedBody:         `user "shae" request error : update error`,
+			expectedBody:         `ошибка запроса пользователя "shae": update error`,
 		},
 	}
 	for _, tt := range testCases {
@@ -596,13 +596,13 @@ func TestHandler_SaveUserNote(t *testing.T) {
 		{
 			name:         "positive: success saving notest",
 			expectedCode: http.StatusOK,
-			expectedBody: `saved note for user "hound"`,
+			expectedBody: `Заметка для пользователя "hound" была успешно сохранена`,
 		},
 		{
 			name:                 "negative: saving error",
 			expectedCode:         http.StatusInternalServerError,
 			storageResponseError: errors.New("save error"),
-			expectedBody:         `user "hound" request error : save error`,
+			expectedBody:         `ошибка запроса пользователя "hound": save error`,
 		},
 	}
 	for _, tt := range testCases {
@@ -848,7 +848,7 @@ func TestHandler_DeleteUserNotes(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, resp.StatusCode(), http.StatusOK)
-		assert.Equal(t, resp.String(), `notes for user "missandei" with title "some title" was successfully deleted`)
+		assert.Equal(t, resp.String(), `Заметки для пользователя "missandei" с заголовком "some title" были успешно удалены`)
 	})
 	t.Run("positive: with no title", func(t *testing.T) {
 		mockedStorage := mocks.NewStorage(t)
@@ -881,7 +881,7 @@ func TestHandler_DeleteUserNotes(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, resp.StatusCode(), http.StatusOK)
-		assert.Equal(t, resp.String(), "notes for user \"missandei\" was successfully deleted")
+		assert.Equal(t, resp.String(), "Заметки для пользователя \"missandei\" были успешно удалены")
 	})
 }
 
@@ -905,13 +905,13 @@ func TestHandler_UpdateUserNote(t *testing.T) {
 		{
 			name:         "positive: success updating notes",
 			expectedCode: http.StatusOK,
-			expectedBody: `updated note for user "shae"`,
+			expectedBody: `Заметка для пользователя "shae" успешно обновлена`,
 		},
 		{
 			name:                 "negative: updating error",
 			expectedCode:         http.StatusInternalServerError,
 			storageResponseError: errors.New("update error"),
-			expectedBody:         `user "shae" request error : update error`,
+			expectedBody:         `ошибка запроса пользователя "shae": update error`,
 		},
 	}
 	for _, tt := range testCases {
@@ -1002,15 +1002,15 @@ func TestHandler_SaveCard(t *testing.T) {
 		expectedBody         string
 	}{
 		{
-			name:         "positive: success saving сфкв",
+			name:         "positive: success saving",
 			expectedCode: http.StatusOK,
-			expectedBody: `saved card for user "hound"`,
+			expectedBody: `Карточка для пользователя "hound" успешно сохранена`,
 		},
 		{
 			name:                 "negative: saving error",
 			expectedCode:         http.StatusInternalServerError,
 			storageResponseError: errors.New("save error"),
-			expectedBody:         `user "hound" request error : save error`,
+			expectedBody:         `ошибка запроса пользователя "hound": save error`,
 		},
 	}
 	for _, tt := range testCases {
@@ -1193,7 +1193,6 @@ func TestHandler_DeleteCard(t *testing.T) {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync() // flushes buffer, if any
 	log := logger.Sugar()
-
 	systemName := "hound"
 	systemPassword := "ihavebadbrother"
 	bankName := "alpha"
@@ -1212,7 +1211,7 @@ func TestHandler_DeleteCard(t *testing.T) {
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(h.CheckAuthorization)
-			r.Post("/delete/card", h.RegisterHandler)
+			r.Post("/delete/card", h.DeleteCardHandler)
 		})
 		srv := httptest.NewServer(r)
 		defer srv.Close()
@@ -1230,7 +1229,7 @@ func TestHandler_DeleteCard(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, resp.StatusCode(), http.StatusOK)
-		assert.Equal(t, resp.String(), `cards of "alpha" bank for user "hound" was successfully deleted`)
+		assert.Equal(t, resp.String(), `Карты "alpha" банка, принадлежащие пользователю "hound" были успешно удалены`)
 	})
 	t.Run("positive: with no number", func(t *testing.T) {
 		mockedStorage := mocks.NewStorage(t)
@@ -1263,6 +1262,6 @@ func TestHandler_DeleteCard(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, resp.StatusCode(), http.StatusOK)
-		assert.Equal(t, resp.String(), "cards with number \"0000888822227777\" for user \"hound\" was successfully deleted")
+		assert.Equal(t, resp.String(), "Карты с номером \"0000888822227777\" принадлежащие пользователю \"hound\" были успешно удалены")
 	})
 }

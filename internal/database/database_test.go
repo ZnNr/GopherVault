@@ -63,7 +63,7 @@ func TestDb_Register(t *testing.T) {
 			conn: mockDB,
 		}
 		err = pg.Register(ctx, userLogin, userPassword)
-		assert.EqualError(t, err, "error while executing register user query: some insert error")
+		assert.EqualError(t, err, "ошибка при выполнении запроса на регистрацию пользователя: some insert error")
 	})
 }
 
@@ -141,7 +141,7 @@ func TestDb_Login(t *testing.T) {
 			conn: mockDB,
 		}
 		err = pg.Login(ctx, userLogin, userPassword)
-		assert.EqualError(t, err, "error while executing search query: search error")
+		assert.EqualError(t, err, "ошибка при выполнении запроса на поиск: search error")
 	})
 }
 
@@ -375,7 +375,7 @@ func TestDb_DeleteCredentials(t *testing.T) {
 		err = pg.DeleteCredentials(ctx, models.Credentials{
 			UserName: user,
 		})
-		assert.EqualError(t, err, "error while deleting credentials for user \"daenerys\": some error")
+		assert.EqualError(t, err, "ошибка при удалении учетных данных для пользователя \"daenerys\": some error")
 	})
 	t.Run("negative: with login", func(t *testing.T) {
 		mockDB, mock, err := sqlmock.New()
@@ -395,7 +395,7 @@ func TestDb_DeleteCredentials(t *testing.T) {
 			UserName: user,
 			Login:    &login,
 		})
-		assert.EqualError(t, err, "error while deleting credentials for user \"daenerys\": some error")
+		assert.EqualError(t, err, "ошибка при удалении учетных данных для пользователя \"daenerys\": some error")
 	})
 }
 
@@ -468,7 +468,7 @@ func TestDb_UpdateCredentials(t *testing.T) {
 		}
 		credentials.Metadata = nil
 		err = pg.UpdateCredentials(ctx, credentials)
-		assert.EqualError(t, err, "error while updating credentials for user \"tirion\": exec error")
+		assert.EqualError(t, err, "ошибка при обновлении учетных данных для пользователя \"tirion\": exec error")
 	})
 }
 
@@ -541,7 +541,7 @@ func TestDb_SaveNote(t *testing.T) {
 		}
 		note.Metadata = nil
 		err = pg.SaveNote(ctx, note)
-		assert.EqualError(t, err, "error while saving note for user \"podric\": exec error")
+		assert.EqualError(t, err, "ошибка при сохранении заметки для пользователя \"podric\": exec error")
 	})
 }
 
@@ -669,7 +669,7 @@ func TestDb_GetNote(t *testing.T) {
 		_, err = pg.GetNotes(ctx, models.Note{
 			UserName: userLogin,
 		})
-		assert.EqualError(t, err, "error while getting notes for user \"myrcella\": query error")
+		assert.EqualError(t, err, "ошибка при получении заметок для пользователя \"myrcella\": query error")
 	})
 }
 
@@ -734,7 +734,7 @@ func TestDb_DeleteNotes(t *testing.T) {
 		err = pg.DeleteNotes(ctx, models.Note{
 			UserName: user,
 		})
-		assert.EqualError(t, err, "error while deleting note for user \"jorah\": some error")
+		assert.EqualError(t, err, "ошибка при удалении заметок для пользователя \"jorah\": some error")
 	})
 }
 
@@ -807,7 +807,7 @@ func TestDb_UpdateNote(t *testing.T) {
 		}
 		note.Metadata = nil
 		err = pg.UpdateNote(ctx, note)
-		assert.EqualError(t, err, "error while updating note \"shopping list\" for user \"varys\": exec error")
+		assert.EqualError(t, err, "ошибка при обновлении заметки \"shopping list\" для пользователя \"varys\": exec error")
 	})
 }
 
@@ -882,7 +882,7 @@ func TestDb_SaveCard(t *testing.T) {
 		}
 		card.Metadata = nil
 		err = pg.SaveCard(ctx, card)
-		assert.EqualError(t, err, "error while saving card data for user \"Tywin\": exec error")
+		assert.EqualError(t, err, "ошибка при сохранении данных карты для пользователя \"Tywin\": exec error")
 	})
 }
 
@@ -900,6 +900,7 @@ func TestDb_GetCard(t *testing.T) {
 				Number:   Ptr("9999333344446666"),
 				CV:       Ptr("321"),
 				Password: Ptr("ironborne"),
+				CardType: Ptr("debet"),
 				Metadata: Ptr("red bank"),
 			},
 			{
@@ -908,6 +909,7 @@ func TestDb_GetCard(t *testing.T) {
 				Number:   Ptr("5555444433337777"),
 				CV:       Ptr("954"),
 				Password: Ptr("ramsey"),
+				CardType: Ptr("debet"),
 				Metadata: Ptr("black bank"),
 			},
 			{
@@ -916,6 +918,7 @@ func TestDb_GetCard(t *testing.T) {
 				Number:   Ptr("6666555544440000"),
 				CV:       Ptr("492"),
 				Password: Ptr("qwerty"),
+				CardType: Ptr("debet"),
 			},
 		}
 
@@ -925,12 +928,12 @@ func TestDb_GetCard(t *testing.T) {
 		}
 		defer mockDB.Close()
 
-		mock.ExpectQuery("select user_name, bank_name, number, cv, password, metadata from cards where user_name").
+		mock.ExpectQuery("select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name").
 			WithArgs(userLogin).
-			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
-				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank").
-				AddRow(userLogin, "tinkoff", "5555444433337777", "hV1G", "zgkfxfba", "black bank").
-				AddRow(userLogin, "sber", "6666555544440000", "iFFA", "zR8XxOfa", nil))
+			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "card_type", "metadata"}).
+				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "debet", "red bank").
+				AddRow(userLogin, "tinkoff", "5555444433337777", "hV1G", "zgkfxfba", "debet", "black bank").
+				AddRow(userLogin, "sber", "6666555544440000", "iFFA", "zR8XxOfa", "debet", nil))
 
 		pg := Db{
 			conn:          mockDB,
@@ -951,6 +954,7 @@ func TestDb_GetCard(t *testing.T) {
 				Number:   Ptr("9999333344446666"),
 				CV:       Ptr("321"),
 				Password: Ptr("ironborne"),
+				CardType: Ptr("debet"),
 				Metadata: Ptr("red bank"),
 			},
 		}
@@ -961,10 +965,10 @@ func TestDb_GetCard(t *testing.T) {
 		}
 		defer mockDB.Close()
 
-		mock.ExpectQuery("select user_name, bank_name, number, cv, password, metadata from cards where user_name").
+		mock.ExpectQuery("select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name").
 			WithArgs(userLogin, "alpha").
-			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
-				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank"))
+			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "card_type", "metadata"}).
+				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "debet", "red bank"))
 
 		pg := Db{
 			conn:          mockDB,
@@ -986,6 +990,7 @@ func TestDb_GetCard(t *testing.T) {
 				Number:   Ptr("9999333344446666"),
 				CV:       Ptr("321"),
 				Password: Ptr("ironborne"),
+				CardType: Ptr("credit"),
 				Metadata: Ptr("red bank"),
 			},
 		}
@@ -996,10 +1001,10 @@ func TestDb_GetCard(t *testing.T) {
 		}
 		defer mockDB.Close()
 
-		mock.ExpectQuery("select user_name, bank_name, number, cv, password, metadata from cards where user_name").
+		mock.ExpectQuery("select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name").
 			WithArgs(userLogin, "9999333344446666").
-			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
-				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank"))
+			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "card_type", "metadata"}).
+				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "credit", "red bank"))
 
 		pg := Db{
 			conn:          mockDB,
@@ -1022,6 +1027,7 @@ func TestDb_GetCard(t *testing.T) {
 				CV:       Ptr("321"),
 				Password: Ptr("ironborne"),
 				Metadata: Ptr("red bank"),
+				CardType: Ptr("credit"),
 			},
 		}
 
@@ -1031,10 +1037,10 @@ func TestDb_GetCard(t *testing.T) {
 		}
 		defer mockDB.Close()
 
-		mock.ExpectQuery("select user_name, bank_name, number, cv, password, metadata from cards where user_name").
+		mock.ExpectQuery("select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name").
 			WithArgs(userLogin, "alpha", "9999333344446666").
-			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}).
-				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "red bank"))
+			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "card_type", "metadata"}).
+				AddRow(userLogin, "alpha", "9999333344446666", "j1pD", "1Rod2PHMNHmQ", "credit", "red bank"))
 
 		pg := Db{
 			conn:          mockDB,
@@ -1056,9 +1062,9 @@ func TestDb_GetCard(t *testing.T) {
 		}
 		defer mockDB.Close()
 
-		mock.ExpectQuery("select user_name, bank_name, number, cv, password, metadata from cards where user_name").
+		mock.ExpectQuery("select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name").
 			WithArgs(userLogin).
-			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "metadata"}))
+			WillReturnRows(sqlmock.NewRows([]string{"user_name", "bank_name", "number", "cv", "password", "card_type", "metadata"}))
 
 		pg := Db{
 			conn:          mockDB,
@@ -1077,7 +1083,7 @@ func TestDb_GetCard(t *testing.T) {
 		}
 		defer mockDB.Close()
 
-		mock.ExpectQuery("select user_name, bank_name, number, cv, password, metadata from cards where user_name").
+		mock.ExpectQuery("select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name").
 			WithArgs(userLogin).
 			WillReturnError(errors.New("query error"))
 
@@ -1089,7 +1095,7 @@ func TestDb_GetCard(t *testing.T) {
 		_, err = pg.GetCard(ctx, models.Card{
 			UserName: userLogin,
 		})
-		assert.EqualError(t, err, "error while getting cards for user \"theon\": query error")
+		assert.EqualError(t, err, "ошибка при получении карт для пользователя \"theon\": query error")
 	})
 }
 
@@ -1175,7 +1181,7 @@ func TestDb_DeleteCards(t *testing.T) {
 		err = pg.DeleteCards(ctx, models.Card{
 			UserName: user,
 		})
-		assert.EqualError(t, err, "error while deleting cards for user \"tomen\": some error")
+		assert.EqualError(t, err, "ошибка при удалении карт для пользователя \"tomen\": some error")
 	})
 }
 

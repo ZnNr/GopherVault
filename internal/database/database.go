@@ -65,7 +65,7 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 
 	// Подготовка аргументов для запроса
 	queryArgs := []interface{}{noteRequest.UserName}
-	query := "SELECT user_name, title, content, metadata FROM notes WHERE user_name = $1"
+	query := "select user_name, title, content, metadata from notes where user_name = $1"
 
 	// Если указано название заметки, добавляем его в запрос и аргументы
 	if noteRequest.Title != nil {
@@ -121,7 +121,7 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 	}
 
 	if len(notes) == 0 {
-		log.Println("Для пользователя %q не найдено заметок", noteRequest.UserName)
+		log.Printf("Для пользователя %q не найдено заметок", noteRequest.UserName)
 		return nil, ErrNoData
 	}
 	log.Printf("Запрос заметок для пользователя %q выполнен успешно", noteRequest.UserName)
@@ -133,7 +133,7 @@ func (d *Db) GetNotes(ctx context.Context, noteRequest models.Note) ([]models.No
 func (d *Db) DeleteNotes(ctx context.Context, noteRequest models.Note) error {
 	// Подготовка аргументов для запроса
 	args := []interface{}{noteRequest.UserName}
-	deleteNotesQuery := "DELETE FROM notes WHERE user_name = $1"
+	deleteNotesQuery := "delete from notes where user_name = $1"
 
 	// Добавляем критерий выборки по названию заметки, если он указан
 	if noteRequest.Title != nil {
@@ -157,7 +157,7 @@ func (d *Db) UpdateNote(ctx context.Context, noteRequest models.Note) error {
 	}
 
 	// Подготовка и выполнение запроса на обновление заметки
-	updateNoteQuery := "UPDATE notes SET content = $1, metadata = $2 WHERE user_name = $3 AND title = $4"
+	updateNoteQuery := "update notes set content = $1, metadata = $2 where user_name = $3 and title = $4"
 	if _, err := d.conn.ExecContext(ctx, updateNoteQuery, encryptedContent, noteRequest.Metadata, noteRequest.UserName, *noteRequest.Title); err != nil {
 		return fmt.Errorf("ошибка при обновлении заметки %q для пользователя %q: %w", *noteRequest.Title, noteRequest.UserName, err)
 	}
@@ -173,7 +173,7 @@ func (d *Db) SaveCredentials(ctx context.Context, credentialsRequest models.Cred
 	}
 
 	// Запрос для сохранения учетных данных
-	saveCredsQuery := "INSERT INTO credentials (user_name, login, password, metadata) VALUES ($1, $2, $3, $4)"
+	saveCredsQuery := "insert into credentials (user_name, login, password, metadata) values ($1, $2, $3, $4)"
 	_, err = d.conn.ExecContext(ctx, saveCredsQuery, credentialsRequest.UserName, *credentialsRequest.Login, encryptedPassword, credentialsRequest.Metadata)
 	if err != nil {
 		return fmt.Errorf("error while saving credentials for user %q: %w", credentialsRequest.UserName, err)
@@ -184,7 +184,7 @@ func (d *Db) SaveCredentials(ctx context.Context, credentialsRequest models.Cred
 // GetCredentials получает учетные данные из базы данных.
 func (d *Db) GetCredentials(ctx context.Context, credentialsRequest models.Credentials) ([]models.Credentials, error) {
 	args := []interface{}{credentialsRequest.UserName}
-	getCredsQuery := "SELECT user_name, login, password, metadata FROM credentials WHERE user_name = $1"
+	getCredsQuery := "select user_name, login, password, metadata from credentials where user_name = $1"
 	if credentialsRequest.Login != nil {
 		args = append(args, *credentialsRequest.Login)
 		getCredsQuery += fmt.Sprintf(" AND login = $%d", len(args))
@@ -229,7 +229,7 @@ func (d *Db) GetCredentials(ctx context.Context, credentialsRequest models.Crede
 // DeleteCredentials удаляет учетные данные из базы данных.
 func (d *Db) DeleteCredentials(ctx context.Context, credentialsRequest models.Credentials) error {
 	args := []any{credentialsRequest.UserName}
-	deleteCredsQuery := "DELETE FROM credentials WHERE user_name = $1"
+	deleteCredsQuery := "delete from credentials where user_name = $1"
 	if credentialsRequest.Login != nil {
 
 		args = append(args, *credentialsRequest.Login)
@@ -247,7 +247,7 @@ func (d *Db) UpdateCredentials(ctx context.Context, credentialsRequest models.Cr
 	if err != nil {
 		return fmt.Errorf("ошибка при шифровании пароля: %w", err)
 	}
-	updateCredsQuery := "UPDATE credentials SET password = $1, metadata = $2 WHERE user_name = $3 AND login = $4"
+	updateCredsQuery := "update credentials set password = $1, metadata = $2 where user_name = $3 and login = $4"
 	if _, err := d.conn.ExecContext(ctx, updateCredsQuery, encryptedPassword, credentialsRequest.Metadata, credentialsRequest.UserName, *credentialsRequest.Login); err != nil {
 		return fmt.Errorf("ошибка при обновлении учетных данных для пользователя %q: %w", credentialsRequest.UserName, err)
 	}
@@ -264,7 +264,7 @@ func (d *Db) SaveCard(ctx context.Context, cardRequest models.Card) error {
 	if err != nil {
 		return fmt.Errorf("ошибка при шифровании CV карты: %w", err)
 	}
-	saveCardQuery := "INSERT INTO cards (user_name, bank_name, number, cv, password, cardType, metadata) VALUES ($1, $2, $3, $4, $5, $6)"
+	saveCardQuery := "insert into cards (user_name, bank_name, number, cv, password, cardType, metadata) values ($1, $2, $3, $4, $5, $6)"
 	if _, err := d.conn.ExecContext(ctx, saveCardQuery, cardRequest.UserName, *cardRequest.BankName, *cardRequest.Number, encryptedCV, encryptedPassword, cardRequest.Metadata); err != nil {
 		return fmt.Errorf("ошибка при сохранении данных карты для пользователя %q: %w", cardRequest.UserName, err)
 	}
@@ -274,7 +274,7 @@ func (d *Db) SaveCard(ctx context.Context, cardRequest models.Card) error {
 // GetCard извлекает карты из базы данных на основе запроса.
 func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Card, error) {
 	args := []interface{}{cardRequest.UserName}
-	getCardsQuery := "SELECT user_name, bank_name, number, cv, password, cardType, metadata FROM cards WHERE user_name = $1"
+	getCardsQuery := "select user_name, bank_name, number, cv, password, cardType, metadata from cards where user_name = $1"
 	if cardRequest.BankName != nil {
 		args = append(args, *cardRequest.BankName)
 		getCardsQuery += fmt.Sprintf(" AND bank_name = $%d", len(args))
@@ -328,7 +328,7 @@ func (d *Db) GetCard(ctx context.Context, cardRequest models.Card) ([]models.Car
 // DeleteCards удаляет карты из базы данных на основе запроса.
 func (d *Db) DeleteCards(ctx context.Context, cardRequest models.Card) error {
 	args := []interface{}{cardRequest.UserName}
-	deleteNotesQuery := "DELETE FROM cards WHERE user_name = $1"
+	deleteNotesQuery := "delete from cards where user_name = $1"
 	if cardRequest.Number != nil {
 		args = append(args, *cardRequest.Number)
 		deleteNotesQuery += fmt.Sprintf(" AND number = $%d", len(args))
@@ -345,7 +345,7 @@ func (d *Db) DeleteCards(ctx context.Context, cardRequest models.Card) error {
 
 // Login проверяет учетные данные пользователя в базе данных.
 func (d *Db) Login(ctx context.Context, login string, password string) error {
-	getRegisteredUser := `SELECT login, password FROM registered_users WHERE login = $1`
+	getRegisteredUser := `select login, password from registered_users where login = $1`
 
 	var loginFromDB, passwordFromDB string
 	if err := d.conn.QueryRowContext(ctx, getRegisteredUser, login).Scan(&loginFromDB, &passwordFromDB); err != nil {
@@ -366,7 +366,7 @@ func (d *Db) Register(ctx context.Context, login string, password string) error 
 	if err != nil {
 		return fmt.Errorf("этот пароль недопустим: %w", err)
 	}
-	registerUser := `INSERT INTO registered_users VALUES ($1, $2)`
+	registerUser := `insert into registered_users values ($1, $2)`
 	if _, err = d.conn.ExecContext(ctx, registerUser, login, hash); err != nil {
 		duplicateKeyErr := ErrDuplicateKey{Key: "registered_users_pkey"}
 		if err.Error() == duplicateKeyErr.Error() {

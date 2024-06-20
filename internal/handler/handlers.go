@@ -123,37 +123,38 @@ func (h *handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 // CheckAuthorization проверяет авторизацию текущего пользователя.
 func (h *handler) CheckAuthorization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Чтение и декодирование JSON из тела запроса в структуру Credentials
+		// parse body
+		var buf bytes.Buffer
+		if _, err := buf.ReadFrom(r.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		var user models.Credentials
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			log.Println("CheckAuthorization: error decoding JSON")
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+		if err := json.Unmarshal(buf.Bytes(), &user); err != nil {
+			log.Println("BasicAuth")
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		// Проверка наличия куки для пользователя
+		// check cookies
 		if h.cookies[user.UserName] == "" {
-			http.Error(w, fmt.Sprintf("User %q is not authorized", user.UserName), http.StatusUnauthorized)
+			http.Error(w, fmt.Sprintf("user %q is not authorized", user.UserName), http.StatusUnauthorized)
 			return
 		}
 
-		// Проверка токена
-		token, err := extractJwtToken(h.cookies[user.UserName])
+		// check token
+		tkn, err := extractJwtToken(h.cookies[user.UserName])
 		if err != nil {
 			message, status := handleUserError(user.UserName, err)
 			http.Error(w, message, status)
 			return
 		}
-
-		// Проверка валидности токена
-		if !token.Valid {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+		if !tkn.Valid {
+			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
 		}
-
-		// Добавление заголовка Authorization и передача управления следующему обработчику
 		w.Header().Add("Authorization", h.cookies[user.UserName])
-		r.Body = io.NopCloser(bytes.NewBuffer([]byte{})) // сброс тела запроса для последующего чтения
+		r.Body = io.NopCloser(bytes.NewBuffer(buf.Bytes()))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -282,11 +283,11 @@ func (h *handler) DeleteCardHandler(w http.ResponseWriter, r *http.Request) {
 
 // generateDeleteResponse генерирует сообщение об успешном удалении карточек
 func generateDeleteResponse(card models.Card) string {
-	response := fmt.Sprintf("Cards for user %q were successfully deleted", card.UserName)
+	response := fmt.Sprintf("Карта польхователя %q была успешно удалена", card.UserName)
 	if card.BankName != nil {
-		response = fmt.Sprintf("Cards of %q bank for user %q were successfully deleted", *card.BankName, card.UserName)
+		response = fmt.Sprintf("Карты %q банка, принадлежащие пользователю %q были успешно удалены", *card.BankName, card.UserName)
 	} else if card.Number != nil {
-		response = fmt.Sprintf("Cards with number %q for user %q were successfully deleted", *card.Number, card.UserName)
+		response = fmt.Sprintf("Карты с номером %q принадлежащие пользователю %q были успешно удалены", *card.Number, card.UserName)
 	}
 	return response
 }

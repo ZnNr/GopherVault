@@ -72,19 +72,19 @@ func createToken(username string, expiration time.Time) (string, error) {
 }
 
 // обработка ошибок, связанных с пользовательским запросом
-func handleUserError(username string, err error) (string, int) {
+func handleUserError(userName string, err error) (string, int) {
 	switch {
 	case errors.Is(err, database.ErrNoSuchUser):
-		return fmt.Sprintf("пользователя %q не существует", username), http.StatusUnauthorized
+		return fmt.Sprintf("пользователя %q не существует", userName), http.StatusUnauthorized
 	case errors.Is(err, database.ErrInvalidCredentials):
-		return fmt.Sprintf("предоставлен неверный пароль для пользователя %q", username), http.StatusUnauthorized
+		return fmt.Sprintf("предоставлен неверный пароль для пользователя %q", userName), http.StatusUnauthorized
 	case errors.Is(err, database.ErrUserAlreadyExists):
-		return fmt.Sprintf("логин %q уже занят", username), http.StatusConflict
+		return fmt.Sprintf("логин %q уже занят", userName), http.StatusConflict
 	case errors.Is(err, database.ErrNoData):
-		return fmt.Sprintf("нет данных для пользователя %q", username), http.StatusNoContent
+		return fmt.Sprintf("нет данных для пользователя %q", userName), http.StatusNoContent
 	case errors.Is(err, jwt.ErrSignatureInvalid), errors.Is(err, jwt.ErrTokenExpired), errors.Is(err, ErrTokenIsEmpty), errors.Is(err, ErrNoToken):
-		return fmt.Sprintf("проблема с токеном для пользователя %q: %s", username, err.Error()), http.StatusUnauthorized
+		return fmt.Sprintf("проблема с токеном для пользователя %q: %s", userName, err.Error()), http.StatusUnauthorized
 	default:
-		return fmt.Sprintf("ошибка запроса пользователя %q: %s", username, err.Error()), http.StatusInternalServerError
+		return fmt.Sprintf("ошибка запроса пользователя %q: %s", userName, err.Error()), http.StatusInternalServerError
 	}
 }
